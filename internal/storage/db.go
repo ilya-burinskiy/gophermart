@@ -16,6 +16,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type Storage interface {
+	CreateUser(ctx context.Context, login, encryptedPassword string) (models.User, error)
+}
+
 type DBStorage struct {
 	pool *pgxpool.Pool
 }
