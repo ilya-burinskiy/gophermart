@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/ilya-burinskiy/gophermart/internal/models"
 	"github.com/jackc/pgerrcode"
@@ -18,6 +18,7 @@ import (
 
 type Storage interface {
 	CreateUser(ctx context.Context, login, encryptedPassword string) (models.User, error)
+	FindUserByLogin(ctx context.Context, login string) (models.User, error)
 }
 
 type DBStorage struct {
@@ -28,8 +29,16 @@ type ErrUserNotUniq struct {
 	User models.User
 }
 
+type ErrUserNotFound struct {
+	User models.User
+}
+
 func (err ErrUserNotUniq) Error() string {
 	return fmt.Sprintf("user with login \"%s\" already exists", err.User.Login)
+}
+
+func (err ErrUserNotFound) Error() string {
+	return fmt.Sprintf("user with login \"%s\" not found", err.User.Login)
 }
 
 func NewDBStorage(dsn string) (*DBStorage, error) {
@@ -64,6 +73,31 @@ func (db *DBStorage) CreateUser(ctx context.Context, login, encryptedPassword st
 		return user, fmt.Errorf("failed to create user %w", err)
 	}
 	user.ID = userID
+
+	return user, nil
+}
+
+func (db *DBStorage) FindUserByLogin(ctx context.Context, login string) (models.User, error) {
+	row := db.pool.QueryRow(
+		ctx,
+		`SELECT "id", "encrypted_password"
+		 FROM "users"
+		 WHERE "login" = @login`,
+		pgx.NamedArgs{"login": login},
+	)
+	user := models.User{Login: login}
+	var id int
+	var encryptedPassword string
+	err := row.Scan(&id, &encryptedPassword)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return user, ErrUserNotFound{User: user}
+		}
+		return user, fmt.Errorf("failed to find user: %w", err)
+	}
+
+	user.ID = id
+	user.EncryptedPassword = encryptedPassword
 
 	return user, nil
 }

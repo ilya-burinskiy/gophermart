@@ -49,3 +49,18 @@ func (mr *MockStorageMockRecorder) CreateUser(arg0, arg1, arg2 interface{}) *gom
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockStorage)(nil).CreateUser), arg0, arg1, arg2)
 }
+
+// FindUserByLogin mocks base method.
+func (m *MockStorage) FindUserByLogin(arg0 context.Context, arg1 string) (models.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindUserByLogin", arg0, arg1)
+	ret0, _ := ret[0].(models.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindUserByLogin indicates an expected call of FindUserByLogin.
+func (mr *MockStorageMockRecorder) FindUserByLogin(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindUserByLogin", reflect.TypeOf((*MockStorage)(nil).FindUserByLogin), arg0, arg1)
+}
