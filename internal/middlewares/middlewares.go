@@ -2,8 +2,10 @@ package middlewares
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/ilya-burinskiy/gophermart/internal/compress"
 	"go.uber.org/zap"
 )
 
@@ -52,4 +54,28 @@ func LogRequest(logger *zap.Logger) func(http.Handler) http.Handler {
 			)
 		})
 	}
+}
+
+func GzipCompress(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		contentType := r.Header.Get("Content-Type")
+		if strings.Contains(contentType, "gzip") {
+			compressReader, err := compress.NewGzipReader(r.Body)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			r.Body = compressReader
+			defer compressReader.Close()
+		}
+
+		acceptEncoding := r.Header.Get("Accept-Encoding")
+		if strings.Contains(acceptEncoding, "gzip") {
+			compressRw := compress.NewGzipWriter(w)
+			w = compressRw
+			defer compressRw.Close()
+		}
+
+		h.ServeHTTP(w, r)
+	})
 }

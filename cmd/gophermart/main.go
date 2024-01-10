@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/ilya-burinskiy/gophermart/internal/handlers"
 	"github.com/ilya-burinskiy/gophermart/internal/middlewares"
 	"github.com/ilya-burinskiy/gophermart/internal/storage"
@@ -22,6 +23,8 @@ func main() {
 	router.Use(
 		middlewares.LogResponse(logger),
 		middlewares.LogRequest(logger),
+		middlewares.GzipCompress,
+		middleware.AllowContentEncoding("gzip"),
 	)
 	router.Mount("/api/user", handlers.UserRouter(db))
 
