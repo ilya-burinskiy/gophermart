@@ -27,6 +27,7 @@ func main() {
 		middleware.AllowContentEncoding("gzip"),
 	)
 	router.Mount("/api/user", handlers.UserRouter(db))
+	router.Mount("/aip/user/orders", handlers.OrderRouter(db, logger))
 
 	server := http.Server{
 		Handler: router,
