@@ -5,6 +5,7 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -19,6 +20,8 @@ import (
 type Storage interface {
 	CreateUser(ctx context.Context, login, encryptedPassword string) (models.User, error)
 	FindUserByLogin(ctx context.Context, login string) (models.User, error)
+
+	CreateOrder(ctx context.Context, userID int, number string, status models.OrderStatus) (models.Order, error)
 }
 
 type DBStorage struct {
@@ -29,12 +32,20 @@ type ErrUserNotUniq struct {
 	User models.User
 }
 
+type ErrOrderNotUnique struct {
+	order models.Order
+}
+
 type ErrUserNotFound struct {
 	User models.User
 }
 
 func (err ErrUserNotUniq) Error() string {
 	return fmt.Sprintf("user with login \"%s\" already exists", err.User.Login)
+}
+
+func (err ErrOrderNotUnique) Error() string {
+	return fmt.Sprintf("order with number \"%s\" already exists", err.order.Number)
 }
 
 func (err ErrUserNotFound) Error() string {
@@ -100,6 +111,44 @@ func (db *DBStorage) FindUserByLogin(ctx context.Context, login string) (models.
 	user.EncryptedPassword = encryptedPassword
 
 	return user, nil
+}
+
+func (db *DBStorage) CreateOrder(
+	ctx context.Context,
+	userID int,
+	number string,
+	status models.OrderStatus) (models.Order, error) {
+
+	currentTime := time.Now()
+	row := db.pool.QueryRow(
+		ctx,
+		`INSERT INTO "orders" ("user_id", "number", "status", "created_at")
+		 VALUES (@userID, @number, @status, @createdAt) RETURNING "id"`,
+		pgx.NamedArgs{
+			"userID":   userID,
+			"number":    number,
+			"status":    status,
+			"createdAt": currentTime,
+		},
+	)
+	var orderID int
+	order := models.Order{
+		UserID:    userID,
+		Number:    number,
+		Status:    status,
+		CreatedAt: currentTime,
+	}
+	err := row.Scan(&orderID)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			return order, ErrOrderNotUnique{order: order}
+		}
+		return order, fmt.Errorf("failed to create order: %w", err)
+	}
+	order.ID = orderID
+
+	return order, nil
 }
 
 //go:embed db/migrations/*.sql

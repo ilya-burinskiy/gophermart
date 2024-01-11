@@ -35,6 +35,21 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 	return m.recorder
 }
 
+// CreateOrder mocks base method.
+func (m *MockStorage) CreateOrder(arg0 context.Context, arg1 int, arg2 string, arg3 models.OrderStatus) (models.Order, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrder", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(models.Order)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateOrder indicates an expected call of CreateOrder.
+func (mr *MockStorageMockRecorder) CreateOrder(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrder", reflect.TypeOf((*MockStorage)(nil).CreateOrder), arg0, arg1, arg2, arg3)
+}
+
 // CreateUser mocks base method.
 func (m *MockStorage) CreateUser(arg0 context.Context, arg1, arg2 string) (models.User, error) {
 	m.ctrl.T.Helper()
