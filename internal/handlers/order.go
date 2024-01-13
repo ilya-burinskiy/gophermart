@@ -5,32 +5,22 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/ilya-burinskiy/gophermart/internal/middlewares"
 	"github.com/ilya-burinskiy/gophermart/internal/models"
 	"github.com/ilya-burinskiy/gophermart/internal/storage"
 	"go.uber.org/zap"
 )
 
-type orderHandlers struct {
+type OrderHandlers struct {
 	store  storage.Storage
 	logger *zap.Logger
 }
 
-func OrderRouter(store storage.Storage, logger *zap.Logger) chi.Router {
-	router := chi.NewRouter()
-	handlers := orderHandlers{store: store, logger: logger}
-	router.Use(
-		middlewares.Authenticate,
-		middleware.AllowContentType("text/plain"),
-	)
-	router.Post("/", handlers.Create)
-
-	return router
+func NewOrderHandlers(store storage.Storage, logger *zap.Logger) OrderHandlers {
+	return OrderHandlers{store: store, logger: logger}
 }
 
-func (oh orderHandlers) Create(w http.ResponseWriter, r *http.Request) {
+func (oh OrderHandlers) Create(w http.ResponseWriter, r *http.Request) {
 	rawBody, err := io.ReadAll(r.Body)
 	if err != nil {
 		oh.logger.Info(err.Error())

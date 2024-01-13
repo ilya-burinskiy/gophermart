@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/ilya-burinskiy/gophermart/internal/auth"
 	"github.com/ilya-burinskiy/gophermart/internal/services"
 	"github.com/ilya-burinskiy/gophermart/internal/storage"
@@ -19,18 +17,6 @@ type UserHandlers struct {
 
 func NewUserHandlers(store storage.Storage) UserHandlers {
 	return UserHandlers{store: store}
-}
-
-func UserRouter(store storage.Storage) chi.Router {
-	handlers := UserHandlers{store: store}
-	registerSrv := services.NewRegisterUserService(store)
-	authenticateSrv := services.NewAuthenticateUserService(store)
-	router := chi.NewRouter()
-	router.Use(middleware.AllowContentType("application/json"))
-	router.Post("/register", handlers.Register(registerSrv))
-	router.Post("/login", handlers.Authenticate(authenticateSrv))
-
-	return router
 }
 
 func (h UserHandlers) Register(registerSrv services.UserRegistrator) func(http.ResponseWriter, *http.Request) {

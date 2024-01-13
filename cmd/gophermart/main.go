@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/ilya-burinskiy/gophermart/internal/handlers"
 	"github.com/ilya-burinskiy/gophermart/internal/middlewares"
+	"github.com/ilya-burinskiy/gophermart/internal/services"
 	"github.com/ilya-burinskiy/gophermart/internal/storage"
 	"go.uber.org/zap"
 )
@@ -26,8 +27,8 @@ func main() {
 		middlewares.GzipCompress,
 		middleware.AllowContentEncoding("gzip"),
 	)
-	router.Mount("/api/user", handlers.UserRouter(db))
-	router.Mount("/aip/user/orders", handlers.OrderRouter(db, logger))
+	configureUserRouter(db, router)
+	configureOrderRouter(db, logger, router)
 
 	server := http.Server{
 		Handler: router,
@@ -49,4 +50,27 @@ func configureLogger(level string) *zap.Logger {
 	}
 
 	return logger
+}
+
+func configureUserRouter(store storage.Storage, mainRouter chi.Router) {
+	handlers := handlers.NewUserHandlers(store)
+	registerSrv := services.NewRegisterUserService(store)
+	authenticateSrv := services.NewAuthenticateUserService(store)
+
+	mainRouter.Group(func(router chi.Router) {
+		router.Use(middleware.AllowContentType("application/json"))
+		router.Post("/api/user/register", handlers.Register(registerSrv))
+		router.Post("/api/user/login", handlers.Authenticate(authenticateSrv))
+	})
+}
+
+func configureOrderRouter(store storage.Storage, logger *zap.Logger, mainRouter chi.Router) {
+	handlers := handlers.NewOrderHandlers(store, logger)
+	mainRouter.Group(func(router chi.Router) {
+		router.Use(
+			middlewares.Authenticate,
+			middleware.AllowContentType("text/plain"),
+		)
+		router.Post("/api/user/orders", handlers.Create)
+	})
 }
