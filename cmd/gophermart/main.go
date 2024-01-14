@@ -65,12 +65,13 @@ func configureUserRouter(store storage.Storage, mainRouter chi.Router) {
 }
 
 func configureOrderRouter(store storage.Storage, logger *zap.Logger, mainRouter chi.Router) {
-	handlers := handlers.NewOrderHandlers(store, logger)
+	handlers := handlers.NewOrderHandlers(store)
+	createSrv := services.NewOrderCreateService(store)
 	mainRouter.Group(func(router chi.Router) {
 		router.Use(
 			middlewares.Authenticate,
 			middleware.AllowContentType("text/plain"),
 		)
-		router.Post("/api/user/orders", handlers.Create)
+		router.Post("/api/user/orders", handlers.Create(createSrv))
 	})
 }
