@@ -2,7 +2,6 @@ package handlers_test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -21,12 +20,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
-
-type want struct {
-	code        int
-	response    string
-	contentType string
-}
 
 type userRegistratorMock struct{ mock.Mock }
 
@@ -327,18 +320,4 @@ func TestAuthenticateHandler(t *testing.T) {
 			assert.Equal(t, tc.want.contentType, response.Header.Get("Content-Type"))
 		})
 	}
-}
-
-func marshalJSON(val interface{}, t *testing.T) string {
-	result, err := json.Marshal(val)
-	require.NoError(t, err)
-
-	return string(result)
-}
-
-func hashPassword(password string, t *testing.T) string {
-	result, err := auth.HashPassword(password)
-	require.NoError(t, err)
-
-	return result
 }
