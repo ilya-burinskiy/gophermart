@@ -22,6 +22,7 @@ type Storage interface {
 	FindUserByLogin(ctx context.Context, login string) (models.User, error)
 
 	CreateOrder(ctx context.Context, userID int, number string, status models.OrderStatus) (models.Order, error)
+	FindOrderByNumber(ctx context.Context, number string) (models.Order, error)
 }
 
 type DBStorage struct {
@@ -40,6 +41,10 @@ type ErrUserNotFound struct {
 	User models.User
 }
 
+type ErrOrderNotFound struct {
+	Order models.Order
+}
+
 func (err ErrUserNotUniq) Error() string {
 	return fmt.Sprintf("user with login \"%s\" already exists", err.User.Login)
 }
@@ -50,6 +55,10 @@ func (err ErrOrderNotUnique) Error() string {
 
 func (err ErrUserNotFound) Error() string {
 	return fmt.Sprintf("user with login \"%s\" not found", err.User.Login)
+}
+
+func (err ErrOrderNotFound) Error() string {
+	return fmt.Sprintf("order with number \"%s\" not found", err.Order.Number)
 }
 
 func NewDBStorage(dsn string) (*DBStorage, error) {
@@ -147,6 +156,34 @@ func (db *DBStorage) CreateOrder(
 		return order, fmt.Errorf("failed to create order: %w", err)
 	}
 	order.ID = orderID
+
+	return order, nil
+}
+
+func (db *DBStorage) FindOrderByNumber(ctx context.Context, number string) (models.Order, error) {
+	row := db.pool.QueryRow(
+		ctx,
+		`SELECT "id", "user_id", "status", "accrual", "created_at"
+		 FROM "orders"
+		 WHERE "number" = @number`,
+		pgx.NamedArgs{"number": number},
+	)
+	order := models.Order{Number: number}
+	var id, userID, accrual int
+	var status models.OrderStatus
+	var createdAt time.Time
+	err := row.Scan(&id, &userID, &status, &accrual, &createdAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return order, ErrOrderNotFound{Order: order}
+		}
+		return order, fmt.Errorf("failed to find order: %w", err)
+	}
+
+	order.UserID = userID
+	order.Status = status
+	order.Accrual = accrual
+	order.CreatedAt = createdAt
 
 	return order, nil
 }

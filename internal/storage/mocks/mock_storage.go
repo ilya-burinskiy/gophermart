@@ -65,6 +65,21 @@ func (mr *MockStorageMockRecorder) CreateUser(arg0, arg1, arg2 interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockStorage)(nil).CreateUser), arg0, arg1, arg2)
 }
 
+// FindOrderByNumber mocks base method.
+func (m *MockStorage) FindOrderByNumber(arg0 context.Context, arg1 string) (models.Order, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindOrderByNumber", arg0, arg1)
+	ret0, _ := ret[0].(models.Order)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindOrderByNumber indicates an expected call of FindOrderByNumber.
+func (mr *MockStorageMockRecorder) FindOrderByNumber(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindOrderByNumber", reflect.TypeOf((*MockStorage)(nil).FindOrderByNumber), arg0, arg1)
+}
+
 // FindUserByLogin mocks base method.
 func (m *MockStorage) FindUserByLogin(arg0 context.Context, arg1 string) (models.User, error) {
 	m.ctrl.T.Helper()
