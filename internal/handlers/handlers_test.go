@@ -2,9 +2,12 @@ package handlers_test
 
 import (
 	"encoding/json"
+	"net/http"
 	"testing"
+	"time"
 
 	"github.com/ilya-burinskiy/gophermart/internal/auth"
+	"github.com/ilya-burinskiy/gophermart/internal/models"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,4 +29,16 @@ func hashPassword(password string, t *testing.T) string {
 	require.NoError(t, err)
 
 	return result
+}
+
+func generateAuthCookie(user models.User, t *testing.T) *http.Cookie {
+	jwtStr, err := auth.BuildJWTString(user)
+	require.NoError(t, err)
+
+	return &http.Cookie{
+		Name:     "jwt",
+		Value:    jwtStr,
+		MaxAge:   int(auth.TokenExp / time.Second),
+		HttpOnly: true,
+	}
 }
