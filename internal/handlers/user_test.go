@@ -35,11 +35,8 @@ type userRegistratorCallResult struct {
 
 func TestRegisterHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	// TODO: maybe use stub instead of mock
 	storageMock := mocks.NewMockStorage(ctrl)
-	storageMock.EXPECT().
-		CreateUser(gomock.Any(), gomock.Any(), gomock.Any()).
-		AnyTimes().
-		Return(models.User{ID: 1, Login: "login", EncryptedPassword: "abcd"}, nil)
 	userRegistratorMock := new(userRegistratorMock)
 
 	router := chi.NewRouter()
@@ -66,7 +63,6 @@ func TestRegisterHandler(t *testing.T) {
 			contentType: "application/json",
 			want: want{
 				code:        http.StatusOK,
-				response:    "",
 				contentType: "application/json",
 			},
 		},
@@ -89,7 +85,6 @@ func TestRegisterHandler(t *testing.T) {
 			reqBody:     marshalJSON(map[string]string{"login": "login", "password": "password"}, t),
 			contentType: "application/json",
 			userRegistratorCallResult: userRegistratorCallResult{
-				returnValue: "",
 				err:         storage.ErrUserNotUniq{User: models.User{ID: 1, Login: "login"}},
 			},
 			want: want{
@@ -105,7 +100,6 @@ func TestRegisterHandler(t *testing.T) {
 			reqBody:     marshalJSON(map[string]string{"login": "login", "password": "password"}, t),
 			contentType: "application/json",
 			userRegistratorCallResult: userRegistratorCallResult{
-				returnValue: "",
 				err:         fmt.Errorf("failed to generate JWT"),
 			},
 			want: want{
@@ -162,15 +156,8 @@ type userAuthenticatorCallResult struct {
 
 func TestAuthenticateHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	// TODO: maybe use stub instead of mock
 	storageMock := mocks.NewMockStorage(ctrl)
-	user := models.User{
-		Login:             "login",
-		EncryptedPassword: hashPassword("password", t),
-	}
-	storageMock.EXPECT().
-		FindUserByLogin(gomock.Any(), gomock.Any()).
-		AnyTimes().
-		Return(user, nil)
 	userAuthenticatorMock := new(userAuthenticatorMock)
 
 	router := chi.NewRouter()
@@ -203,7 +190,6 @@ func TestAuthenticateHandler(t *testing.T) {
 			contentType: "application/json",
 			want: want{
 				code:        http.StatusOK,
-				response:    "",
 				contentType: "application/json",
 			},
 		},
