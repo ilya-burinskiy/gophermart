@@ -23,6 +23,7 @@ type Storage interface {
 
 	CreateOrder(ctx context.Context, userID int, number string, status models.OrderStatus) (models.Order, error)
 	FindOrderByNumber(ctx context.Context, number string) (models.Order, error)
+	UpdateOrder(ctx context.Context, orderID int, status models.OrderStatus, accrual int) error
 
 	CreateBalance(ctx context.Context, userID, currentAmount int) (models.Balance, error)
 	UpdateBalanceCurrentAmount(ctx context.Context, balanceID, amount int) error
@@ -221,6 +222,19 @@ func (db *DBStorage) FindBalanceByUserID(ctx context.Context, userID int) (model
 	balance.WithdrawnAmount = withdrawnAmount
 
 	return balance, nil
+}
+
+func (db *DBStorage) UpdateOrder(ctx context.Context, orderID int, status models.OrderStatus, accrual int) error {
+	_, err := db.pool.Exec(
+		ctx,
+		`UPDATE "orders" SET "status" = @status, "accrual" = @accrual WHERE "id" = @orderID`,
+		pgx.NamedArgs{"status": status, "accrual": accrual, "orderID": orderID},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update status for order id=%d: %w", orderID, err)
+	}
+
+	return nil
 }
 
 func (db *DBStorage) BeginTranscaction(ctx context.Context) (pgx.Tx, error) {
