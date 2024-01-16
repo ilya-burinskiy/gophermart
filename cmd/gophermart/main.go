@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/ilya-burinskiy/gophermart/internal/configs"
 	"github.com/ilya-burinskiy/gophermart/internal/handlers"
 	"github.com/ilya-burinskiy/gophermart/internal/middlewares"
 	"github.com/ilya-burinskiy/gophermart/internal/services"
@@ -13,8 +14,8 @@ import (
 )
 
 func main() {
-	// TODO: make server addr and DSN configurable
-	db, err := storage.NewDBStorage("postgres://gophermart:password@localhost:5432/gophermart")
+	config := configs.Parse()
+	db, err := storage.NewDBStorage(config.DSN)
 	if err != nil {
 		panic(err)
 	}
@@ -32,7 +33,7 @@ func main() {
 
 	server := http.Server{
 		Handler: router,
-		Addr:    "localhost:8080",
+		Addr:    config.RunAddr,
 	}
 	server.ListenAndServe()
 }
@@ -64,7 +65,11 @@ func configureUserRouter(store storage.Storage, mainRouter chi.Router) {
 	})
 }
 
-func configureOrderRouter(store storage.Storage, logger *zap.Logger, mainRouter chi.Router) {
+func configureOrderRouter(
+	store storage.Storage,
+	logger *zap.Logger,
+	mainRouter chi.Router) {
+
 	handlers := handlers.NewOrderHandlers(store)
 	createSrv := services.NewOrderCreateService(store)
 	mainRouter.Group(func(router chi.Router) {
