@@ -25,6 +25,7 @@ type Storage interface {
 	FindOrderByNumber(ctx context.Context, number string) (models.Order, error)
 
 	CreateBalance(ctx context.Context, userID, currentAmount int) (models.Balance, error)
+	UpdateBalanceCurrentAmount(ctx context.Context, balanceID, amount int) error
 
 	BeginTranscaction(ctx context.Context) (pgx.Tx, error)
 }
@@ -184,6 +185,19 @@ func (db *DBStorage) CreateBalance(ctx context.Context, userID, currentAmount in
 	balance.ID = balanceID
 
 	return balance, nil
+}
+
+func (db *DBStorage) UpdateBalanceCurrentAmount(ctx context.Context, balanceID, amount int) error {
+	_, err := db.pool.Exec(
+		ctx,
+		`UPDATE "balances" SET "current_amount" = @currentAmount WHERE "id" = @balanceID`,
+		pgx.NamedArgs{"currentAmount": amount, "balanceID": balanceID},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update amount for balance id=%d: %w", balanceID, err)
+	}
+
+	return nil
 }
 
 func (db *DBStorage) BeginTranscaction(ctx context.Context) (pgx.Tx, error) {
