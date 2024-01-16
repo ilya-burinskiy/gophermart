@@ -51,6 +51,21 @@ func (mr *MockStorageMockRecorder) BeginTranscaction(arg0 interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTranscaction", reflect.TypeOf((*MockStorage)(nil).BeginTranscaction), arg0)
 }
 
+// CreateBalance mocks base method.
+func (m *MockStorage) CreateBalance(arg0 context.Context, arg1, arg2 int) (models.Balance, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateBalance", arg0, arg1, arg2)
+	ret0, _ := ret[0].(models.Balance)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateBalance indicates an expected call of CreateBalance.
+func (mr *MockStorageMockRecorder) CreateBalance(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBalance", reflect.TypeOf((*MockStorage)(nil).CreateBalance), arg0, arg1, arg2)
+}
+
 // CreateOrder mocks base method.
 func (m *MockStorage) CreateOrder(arg0 context.Context, arg1 int, arg2 string, arg3 models.OrderStatus) (models.Order, error) {
 	m.ctrl.T.Helper()

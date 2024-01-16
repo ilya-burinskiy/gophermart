@@ -37,3 +37,11 @@ type ErrOrderNotFound struct {
 func (err ErrOrderNotFound) Error() string {
 	return fmt.Sprintf("order with number \"%s\" not found", err.Order.Number)
 }
+
+type ErrBalanceNotUnique struct {
+	Balance models.Balance
+}
+
+func (err ErrBalanceNotUnique) Error() string {
+	return fmt.Sprintf("balance with \"user_id\"=%d already exists", err.Balance.UserID)
+}

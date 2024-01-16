@@ -24,6 +24,8 @@ type Storage interface {
 	CreateOrder(ctx context.Context, userID int, number string, status models.OrderStatus) (models.Order, error)
 	FindOrderByNumber(ctx context.Context, number string) (models.Order, error)
 
+	CreateBalance(ctx context.Context, userID, currentAmount int) (models.Balance, error)
+
 	BeginTranscaction(ctx context.Context) (pgx.Tx, error)
 }
 
@@ -156,6 +158,32 @@ func (db *DBStorage) FindOrderByNumber(ctx context.Context, number string) (mode
 	order.CreatedAt = createdAt
 
 	return order, nil
+}
+
+func (db *DBStorage) CreateBalance(ctx context.Context, userID, currentAmount int) (models.Balance, error) {
+	row := db.pool.QueryRow(
+		ctx,
+		`INSERT INTO "balances" ("user_id", "current_amount")
+		 VALUES (@userID, @currentAmount) RETURNING "id"`,
+		pgx.NamedArgs{"userID": userID, "currentAmount": currentAmount},
+	)
+	var balanceID int
+	balance := models.Balance{
+		UserID:        userID,
+		CurrentAmount: currentAmount,
+	}
+	err := row.Scan(&balanceID)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			return balance, ErrBalanceNotUnique{Balance: balance}
+		}
+
+		return balance, fmt.Errorf("failed to create balance: %w", err)
+	}
+	balance.ID = balanceID
+
+	return balance, nil
 }
 
 func (db *DBStorage) BeginTranscaction(ctx context.Context) (pgx.Tx, error) {
