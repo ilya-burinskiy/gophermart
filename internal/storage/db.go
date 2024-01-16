@@ -26,6 +26,7 @@ type Storage interface {
 
 	CreateBalance(ctx context.Context, userID, currentAmount int) (models.Balance, error)
 	UpdateBalanceCurrentAmount(ctx context.Context, balanceID, amount int) error
+	FindBalanceByUserID(ctx context.Context, userID int) (models.Balance, error)
 
 	BeginTranscaction(ctx context.Context) (pgx.Tx, error)
 }
@@ -198,6 +199,28 @@ func (db *DBStorage) UpdateBalanceCurrentAmount(ctx context.Context, balanceID, 
 	}
 
 	return nil
+}
+
+func (db *DBStorage) FindBalanceByUserID(ctx context.Context, userID int) (models.Balance, error) {
+	row := db.pool.QueryRow(
+		ctx,
+		`SELECT "id", "current_amount", "withdrawn_amount" FROM "balances" WHERE "user_id" = @userID`,
+		pgx.NamedArgs{"userID": userID},
+	)
+	balance := models.Balance{UserID: userID}
+	var id, currentAmount, withdrawnAmount int
+	err := row.Scan(&id, &currentAmount, &withdrawnAmount)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return balance, ErrBalanceNotFound{Balance: balance}
+		}
+		return balance, fmt.Errorf("failed to find balance: %w", err)
+	}
+	balance.ID = id
+	balance.CurrentAmount = currentAmount
+	balance.WithdrawnAmount = withdrawnAmount
+
+	return balance, nil
 }
 
 func (db *DBStorage) BeginTranscaction(ctx context.Context) (pgx.Tx, error) {

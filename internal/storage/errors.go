@@ -45,3 +45,11 @@ type ErrBalanceNotUnique struct {
 func (err ErrBalanceNotUnique) Error() string {
 	return fmt.Sprintf("balance with \"user_id\"=%d already exists", err.Balance.UserID)
 }
+
+type ErrBalanceNotFound struct {
+	Balance models.Balance
+}
+
+func (err ErrBalanceNotFound) Error() string {
+	return fmt.Sprintf("balance with \"user_id\"=%d not found", err.Balance.UserID)
+}
