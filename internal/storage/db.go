@@ -31,38 +31,6 @@ type DBStorage struct {
 	pool *pgxpool.Pool
 }
 
-type ErrUserNotUniq struct {
-	User models.User
-}
-
-type ErrOrderNotUnique struct {
-	order models.Order
-}
-
-type ErrUserNotFound struct {
-	User models.User
-}
-
-type ErrOrderNotFound struct {
-	Order models.Order
-}
-
-func (err ErrUserNotUniq) Error() string {
-	return fmt.Sprintf("user with login \"%s\" already exists", err.User.Login)
-}
-
-func (err ErrOrderNotUnique) Error() string {
-	return fmt.Sprintf("order with number \"%s\" already exists", err.order.Number)
-}
-
-func (err ErrUserNotFound) Error() string {
-	return fmt.Sprintf("user with login \"%s\" not found", err.User.Login)
-}
-
-func (err ErrOrderNotFound) Error() string {
-	return fmt.Sprintf("order with number \"%s\" not found", err.Order.Number)
-}
-
 func NewDBStorage(dsn string) (*DBStorage, error) {
 	if err := runMigrations(dsn); err != nil {
 		return nil, fmt.Errorf("failed to run DB migrations: %w", err)
