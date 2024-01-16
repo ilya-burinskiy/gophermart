@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/ilya-burinskiy/gophermart/internal/accrual"
 	"github.com/ilya-burinskiy/gophermart/internal/configs"
 	"github.com/ilya-burinskiy/gophermart/internal/handlers"
 	"github.com/ilya-burinskiy/gophermart/internal/middlewares"
@@ -29,7 +30,7 @@ func main() {
 		middleware.AllowContentEncoding("gzip"),
 	)
 	configureUserRouter(db, router)
-	configureOrderRouter(db, logger, router)
+	configureOrderRouter(db, logger, config, router)
 
 	server := http.Server{
 		Handler: router,
@@ -68,10 +69,14 @@ func configureUserRouter(store storage.Storage, mainRouter chi.Router) {
 func configureOrderRouter(
 	store storage.Storage,
 	logger *zap.Logger,
+	config configs.Config,
 	mainRouter chi.Router) {
 
 	handlers := handlers.NewOrderHandlers(store)
-	createSrv := services.NewOrderCreateService(store)
+	accrualApiClient := accrual.NewClient(config.AccrualBaseURL)
+	accrualSrv := services.NewAccrualWorker(accrualApiClient, store, logger)
+	go accrualSrv.Run()
+	createSrv := services.NewOrderCreateService(store, accrualSrv)
 	mainRouter.Group(func(router chi.Router) {
 		router.Use(
 			middlewares.Authenticate,

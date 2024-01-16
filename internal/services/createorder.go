@@ -14,11 +14,15 @@ type OrderCreater interface {
 }
 
 type OrderCreateService struct {
-	store storage.Storage
+	store      storage.Storage
+	accuralSrv AccrualWorker
 }
 
-func NewOrderCreateService(store storage.Storage) OrderCreateService {
-	return OrderCreateService{store: store}
+func NewOrderCreateService(store storage.Storage, accuralSrv AccrualWorker) OrderCreateService {
+	return OrderCreateService{
+		store:      store,
+		accuralSrv: accuralSrv,
+	}
 }
 
 type ErrDuplicatedOrder struct {
@@ -64,6 +68,7 @@ func (srv OrderCreateService) Call(ctx context.Context, number string, userID in
 
 		return models.Order{}, fmt.Errorf("failed to create order: %w", err)
 	}
+	srv.accuralSrv.Register(order)
 
 	return order, nil
 }
