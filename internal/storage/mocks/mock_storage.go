@@ -10,6 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	models "github.com/ilya-burinskiy/gophermart/internal/models"
+	pgx "github.com/jackc/pgx/v5"
 )
 
 // MockStorage is a mock of Storage interface.
@@ -33,6 +34,21 @@ func NewMockStorage(ctrl *gomock.Controller) *MockStorage {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 	return m.recorder
+}
+
+// BeginTranscaction mocks base method.
+func (m *MockStorage) BeginTranscaction(arg0 context.Context) (pgx.Tx, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BeginTranscaction", arg0)
+	ret0, _ := ret[0].(pgx.Tx)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// BeginTranscaction indicates an expected call of BeginTranscaction.
+func (mr *MockStorageMockRecorder) BeginTranscaction(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTranscaction", reflect.TypeOf((*MockStorage)(nil).BeginTranscaction), arg0)
 }
 
 // CreateOrder mocks base method.

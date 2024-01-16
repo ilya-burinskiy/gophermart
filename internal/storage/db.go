@@ -23,6 +23,8 @@ type Storage interface {
 
 	CreateOrder(ctx context.Context, userID int, number string, status models.OrderStatus) (models.Order, error)
 	FindOrderByNumber(ctx context.Context, number string) (models.Order, error)
+
+	BeginTranscaction(ctx context.Context) (pgx.Tx, error)
 }
 
 type DBStorage struct {
@@ -186,6 +188,10 @@ func (db *DBStorage) FindOrderByNumber(ctx context.Context, number string) (mode
 	order.CreatedAt = createdAt
 
 	return order, nil
+}
+
+func (db *DBStorage) BeginTranscaction(ctx context.Context) (pgx.Tx, error) {
+	return db.pool.Begin(ctx)
 }
 
 //go:embed db/migrations/*.sql
