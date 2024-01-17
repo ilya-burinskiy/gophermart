@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 type OrderStatus int
 
@@ -12,10 +15,30 @@ const (
 )
 
 type Order struct {
-	ID        int
-	UserID    int
-	Number    string
-	Status    OrderStatus
-	Accrual   int
-	CreatedAt time.Time
+	ID        int         `json:"-"`
+	UserID    int         `json:"-"`
+	Number    string      `json:"number"`
+	Status    OrderStatus `json:"status"`
+	Accrual   int         `json:"accrual"`
+	CreatedAt time.Time   `json:"uploaded_at"`
+}
+
+func (order Order) MarshalJSON() ([]byte, error) {
+	type OrderAlias Order
+
+	orderStatus2String := map[OrderStatus]string{
+		RegisteredOrder: "REGISTERED",
+		ProcessingOrder: "PROCESSING",
+		ProcessedOrder:  "PROCESSED",
+		InvalidOrder:    "INVALID",
+	}
+	aliasValue := struct {
+		OrderAlias
+		Status string `json:"status"`
+	}{
+		OrderAlias: OrderAlias(order),
+		Status:     orderStatus2String[order.Status],
+	}
+
+	return json.Marshal(aliasValue)
 }
