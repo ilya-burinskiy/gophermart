@@ -5,7 +5,7 @@ import "time"
 type OrderStatus int
 
 const (
-	NewOrder OrderStatus = iota
+	RegisteredOrder OrderStatus = iota
 	ProcessingOrder
 	InvalidOrder
 	ProcessedOrder
