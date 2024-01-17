@@ -20,6 +20,7 @@ import (
 type Storage interface {
 	CreateUser(ctx context.Context, login, encryptedPassword string) (models.User, error)
 	FindUserByLogin(ctx context.Context, login string) (models.User, error)
+	UserOrders(ctx context.Context, userID int) ([]models.Order, error)
 
 	CreateOrder(ctx context.Context, userID int, number string, status models.OrderStatus) (models.Order, error)
 	FindOrderByNumber(ctx context.Context, number string) (models.Order, error)
@@ -95,6 +96,46 @@ func (db *DBStorage) FindUserByLogin(ctx context.Context, login string) (models.
 	user.EncryptedPassword = encryptedPassword
 
 	return user, nil
+}
+
+func (db *DBStorage) UserOrders(ctx context.Context, userID int) ([]models.Order, error) {
+	rows, err := db.pool.Query(
+		ctx,
+		`SELECT "id", "user_id", "number", "status", "accrual", "created_at"
+		 FROM "orders"
+		 WHERE "user_id" = @userID
+		 ORDER BY "created_at" DESC`,
+		pgx.NamedArgs{"userID": userID},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch orders: %w", err)
+	}
+
+	result, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (models.Order, error) {
+		var (
+			id        int
+			userID    int
+			number    string
+			status    models.OrderStatus
+			accrual   int
+			createdAt time.Time
+		)
+		err := row.Scan(&id, &userID, &number, &status, &accrual, &createdAt)
+
+		return models.Order{
+			ID:        id,
+			UserID:    userID,
+			Number:    number,
+			Status:    status,
+			Accrual:   accrual,
+			CreatedAt: createdAt,
+		}, err
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch orders: %w", err)
+	}
+
+	return result, nil
 }
 
 func (db *DBStorage) CreateOrder(
