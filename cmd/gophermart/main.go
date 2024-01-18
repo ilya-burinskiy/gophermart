@@ -77,11 +77,19 @@ func configureOrderRouter(
 	accrualSrv := services.NewAccrualWorker(accrualApiClient, store, logger)
 	go accrualSrv.Run()
 	createSrv := services.NewOrderCreateService(store, accrualSrv)
+	fetchSrv := services.NewUserOrdersFetcher(store)
 	mainRouter.Group(func(router chi.Router) {
 		router.Use(
 			middlewares.Authenticate,
 			middleware.AllowContentType("text/plain"),
 		)
 		router.Post("/api/user/orders", handlers.Create(createSrv))
+	})
+	mainRouter.Group(func(router chi.Router) {
+		router.Use(
+			middlewares.Authenticate,
+			middleware.AllowContentType("application/json"),
+		)
+		router.Get("/api/user/orders", handlers.Get(fetchSrv))
 	})
 }
