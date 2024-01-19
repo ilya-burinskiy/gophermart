@@ -32,6 +32,7 @@ func main() {
 	configureUserRouter(db, router)
 	configureOrderRouter(db, logger, config, router)
 	configureBalanceRouter(db, router)
+	configureWithdrawalsRouter(db, router)
 
 	server := http.Server{
 		Handler: router,
@@ -103,5 +104,17 @@ func configureBalanceRouter(store storage.Storage, mainRouter chi.Router) {
 			middleware.AllowContentType("application/json"),
 		)
 		router.Get("/api/user/balance", handlers.Get)
+	})
+}
+
+func configureWithdrawalsRouter(store storage.Storage, mainRouter chi.Router) {
+	handlers := handlers.NewWithdrawalHanlers(store)
+	fetchSrv := services.NewUserWithdrawalsFetcher(store)
+	mainRouter.Group(func(router chi.Router) {
+		router.Use(
+			middlewares.Authenticate,
+			middleware.AllowContentType("application/json"),
+		)
+		router.Get("/api/user/withdrawals", handlers.Get(fetchSrv))
 	})
 }

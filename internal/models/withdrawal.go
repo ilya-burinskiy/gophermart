@@ -3,9 +3,9 @@ package models
 import "time"
 
 type Withdrawal struct {
-	ID          int
-	OrderNumber string
-	UserID      int
-	Sum         int
-	ProcessedAt time.Time
+	ID          int       `json:"-"`
+	OrderNumber string    `json:"number"`
+	UserID      int       `json:"-"`
+	Sum         int       `json:"sum"`
+	ProcessedAt time.Time `json:"processed_at"`
 }
