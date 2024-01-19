@@ -31,6 +31,7 @@ func main() {
 	)
 	configureUserRouter(db, router)
 	configureOrderRouter(db, logger, config, router)
+	configureBalanceRouter(db, router)
 
 	server := http.Server{
 		Handler: router,
@@ -91,5 +92,16 @@ func configureOrderRouter(
 			middleware.AllowContentType("application/json"),
 		)
 		router.Get("/api/user/orders", handlers.Get(fetchSrv))
+	})
+}
+
+func configureBalanceRouter(store storage.Storage, mainRouter chi.Router) {
+	handlers := handlers.NewBalanceHandlers(store)
+	mainRouter.Group(func(router chi.Router) {
+		router.Use(
+			middlewares.Authenticate,
+			middleware.AllowContentType("application/json"),
+		)
+		router.Get("/api/user/balance", handlers.Get)
 	})
 }
