@@ -183,3 +183,18 @@ func (mr *MockStorageMockRecorder) UserOrders(arg0, arg1 interface{}) *gomock.Ca
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserOrders", reflect.TypeOf((*MockStorage)(nil).UserOrders), arg0, arg1)
 }
+
+// UserWithdrawals mocks base method.
+func (m *MockStorage) UserWithdrawals(arg0 context.Context, arg1 int) ([]models.Withdrawal, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UserWithdrawals", arg0, arg1)
+	ret0, _ := ret[0].([]models.Withdrawal)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UserWithdrawals indicates an expected call of UserWithdrawals.
+func (mr *MockStorageMockRecorder) UserWithdrawals(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserWithdrawals", reflect.TypeOf((*MockStorage)(nil).UserWithdrawals), arg0, arg1)
+}

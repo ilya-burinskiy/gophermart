@@ -30,6 +30,8 @@ type Storage interface {
 	UpdateBalanceCurrentAmount(ctx context.Context, balanceID, amount int) error
 	FindBalanceByUserID(ctx context.Context, userID int) (models.Balance, error)
 
+	UserWithdrawals(ctx context.Context, userID int) ([]models.Withdrawal, error)
+
 	BeginTranscaction(ctx context.Context) (pgx.Tx, error)
 }
 
@@ -150,7 +152,7 @@ func (db *DBStorage) CreateOrder(
 		`INSERT INTO "orders" ("user_id", "number", "status", "created_at")
 		 VALUES (@userID, @number, @status, @createdAt) RETURNING "id"`,
 		pgx.NamedArgs{
-			"userID":   userID,
+			"userID":    userID,
 			"number":    number,
 			"status":    status,
 			"createdAt": currentTime,
@@ -276,6 +278,44 @@ func (db *DBStorage) UpdateOrder(ctx context.Context, orderID int, status models
 	}
 
 	return nil
+}
+
+func (db *DBStorage) UserWithdrawals(ctx context.Context, userID int) ([]models.Withdrawal, error) {
+	rows, err := db.pool.Query(
+		ctx,
+		`SELECT "id", "order_number", "user_id", "sum", "processed_at"
+		 FROM "withdrawals"
+		 WHERE "user_id" = @userID
+		 ORDER BY "processed_at"`,
+		pgx.NamedArgs{"userID": userID},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch withdrawals: %w", err)
+	}
+
+	result, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (models.Withdrawal, error) {
+		var (
+			id          int
+			orderNumber string
+			userID      int
+			sum         int
+			processedAt time.Time
+		)
+		err := row.Scan(&id, &orderNumber, &userID, &sum, &processedAt)
+
+		return models.Withdrawal{
+			ID:          id,
+			OrderNumber: orderNumber,
+			UserID:      userID,
+			Sum:         sum,
+			ProcessedAt: processedAt,
+		}, err
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch withdrawals: %w", err)
+	}
+
+	return result, nil
 }
 
 func (db *DBStorage) BeginTranscaction(ctx context.Context) (pgx.Tx, error) {
