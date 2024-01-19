@@ -96,6 +96,21 @@ func (mr *MockStorageMockRecorder) CreateUser(arg0, arg1, arg2 interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockStorage)(nil).CreateUser), arg0, arg1, arg2)
 }
 
+// CreateWithdrawal mocks base method.
+func (m *MockStorage) CreateWithdrawal(arg0 context.Context, arg1 int, arg2 string, arg3 int) (models.Withdrawal, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateWithdrawal", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(models.Withdrawal)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateWithdrawal indicates an expected call of CreateWithdrawal.
+func (mr *MockStorageMockRecorder) CreateWithdrawal(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateWithdrawal", reflect.TypeOf((*MockStorage)(nil).CreateWithdrawal), arg0, arg1, arg2, arg3)
+}
+
 // FindBalanceByUserID mocks base method.
 func (m *MockStorage) FindBalanceByUserID(arg0 context.Context, arg1 int) (models.Balance, error) {
 	m.ctrl.T.Helper()

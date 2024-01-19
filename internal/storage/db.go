@@ -31,6 +31,7 @@ type Storage interface {
 	FindBalanceByUserID(ctx context.Context, userID int) (models.Balance, error)
 
 	UserWithdrawals(ctx context.Context, userID int) ([]models.Withdrawal, error)
+	CreateWithdrawal(ctx context.Context, userID int, orderNumber string, sum int) (models.Withdrawal, error)
 
 	BeginTranscaction(ctx context.Context) (pgx.Tx, error)
 }
@@ -316,6 +317,30 @@ func (db *DBStorage) UserWithdrawals(ctx context.Context, userID int) ([]models.
 	}
 
 	return result, nil
+}
+
+func (db *DBStorage) CreateWithdrawal(ctx context.Context, userID int, orderNumber string, sum int) (models.Withdrawal, error) {
+	currentTime := time.Now()
+	row := db.pool.QueryRow(
+		ctx,
+		`INSERT INTO "withdrawals" ("order_number", "user_id", "sum", "processed_at")
+		 VALUES (@orderNumber, @userID, @sum, @processedAt) RETURNING "id"`,
+		pgx.NamedArgs{"orderNumber": orderNumber, "userID": userID, "sum": sum, "processedAt": currentTime},
+	)
+	var withdrawalID int
+	withdrawal := models.Withdrawal{
+		OrderNumber: orderNumber,
+		UserID:      userID,
+		Sum:         sum,
+		ProcessedAt: currentTime,
+	}
+	err := row.Scan(&withdrawalID)
+	if err != nil {
+		return withdrawal, fmt.Errorf("failed to save withdrawal: %w", err)
+	}
+	withdrawal.ID = withdrawalID
+
+	return withdrawal, nil
 }
 
 func (db *DBStorage) BeginTranscaction(ctx context.Context) (pgx.Tx, error) {
