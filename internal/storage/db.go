@@ -28,6 +28,7 @@ type Storage interface {
 
 	CreateBalance(ctx context.Context, userID, currentAmount int) (models.Balance, error)
 	UpdateBalanceCurrentAmount(ctx context.Context, balanceID, amount int) error
+	UpdateBalanceWithdrawnAmount(ctx context.Context, balanceID, amount int) error
 	FindBalanceByUserID(ctx context.Context, userID int) (models.Balance, error)
 
 	UserWithdrawals(ctx context.Context, userID int) ([]models.Withdrawal, error)
@@ -241,6 +242,19 @@ func (db *DBStorage) UpdateBalanceCurrentAmount(ctx context.Context, balanceID, 
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update amount for balance id=%d: %w", balanceID, err)
+	}
+
+	return nil
+}
+
+func (db *DBStorage) UpdateBalanceWithdrawnAmount(ctx context.Context, balanceID, amount int) error {
+	_, err := db.pool.Exec(
+		ctx,
+		`UPDATE "balances" SET "withdrawn_amount" = @withdrawnAmount WHERE "id" = @balanceID`,
+		pgx.NamedArgs{"withdrawnAmount": amount, "balanceID": balanceID},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update withdrawn amount for balance id=%d: %w", balanceID, err)
 	}
 
 	return nil
