@@ -110,11 +110,13 @@ func configureBalanceRouter(store storage.Storage, mainRouter chi.Router) {
 func configureWithdrawalsRouter(store storage.Storage, mainRouter chi.Router) {
 	handlers := handlers.NewWithdrawalHanlers(store)
 	fetchSrv := services.NewUserWithdrawalsFetcher(store)
+	createSrv := services.NewWithdrawalCreator(store)
 	mainRouter.Group(func(router chi.Router) {
 		router.Use(
 			middlewares.Authenticate,
 			middleware.AllowContentType("application/json"),
 		)
 		router.Get("/api/user/withdrawals", handlers.Get(fetchSrv))
+		router.Post("/api/user/balance/withdraw", handlers.Create(createSrv))
 	})
 }

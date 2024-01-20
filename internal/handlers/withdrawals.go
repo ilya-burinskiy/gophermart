@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/ilya-burinskiy/gophermart/internal/middlewares"
@@ -15,6 +16,35 @@ type WithdrawalHandlers struct {
 
 func NewWithdrawalHanlers(store storage.Storage) WithdrawalHandlers {
 	return WithdrawalHandlers{store: store}
+}
+
+func (wh WithdrawalHandlers) Create(createSrv services.WithdrawalCreator) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		type payload struct {
+			Order string `json:"order"`
+			Sum   int    `json:"sum"`
+		}
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		decoder := json.NewDecoder(r.Body)
+		var requestBody payload
+		err := decoder.Decode(&requestBody)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		userID, _ := middlewares.UserIDFromContext(r.Context())
+		_, err = createSrv.Call(r.Context(), userID, requestBody.Order, requestBody.Sum)
+		if err != nil {
+			if errors.Is(err, services.ErrNotEnoughAmount) {
+				w.WriteHeader(http.StatusPaymentRequired)
+				return
+			}
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}
 }
 
 func (wh WithdrawalHandlers) Get(fetchSrv services.UserWithdrawalsFetcher) func(http.ResponseWriter, *http.Request) {
