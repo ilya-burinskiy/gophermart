@@ -1,7 +1,11 @@
 package main
 
 import (
+	"context"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -29,6 +33,10 @@ func main() {
 		middlewares.GzipCompress,
 		middleware.AllowContentEncoding("gzip"),
 	)
+
+	exitCh := make(chan os.Signal, 1)
+	signal.Notify(exitCh, syscall.SIGINT, syscall.SIGTERM)
+
 	configureUserRouter(db, router)
 	configureOrderRouter(db, logger, config, router)
 	configureBalanceRouter(db, router)
@@ -38,7 +46,14 @@ func main() {
 		Handler: router,
 		Addr:    config.RunAddr,
 	}
+	go onExit(db, &server, exitCh)
 	server.ListenAndServe()
+}
+
+func onExit(store storage.Storage, srv *http.Server, exitCh <-chan os.Signal) {
+	<-exitCh
+	store.Close()
+	srv.Shutdown(context.TODO())
 }
 
 func configureLogger(level string) *zap.Logger {
