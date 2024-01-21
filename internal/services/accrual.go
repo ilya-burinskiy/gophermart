@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"os"
 
 	"github.com/ilya-burinskiy/gophermart/internal/accrual"
 	"github.com/ilya-burinskiy/gophermart/internal/models"
@@ -20,18 +21,20 @@ type accrualWorker struct {
 	store   storage.Storage
 	logger  *zap.Logger
 	channel chan models.Order
+	exitCh  <-chan os.Signal
 }
 
-// TODO: accept exitCh for graceful shutdown
 func NewAccrualWorker(
 	accrualApiClient accrual.ApiClient,
 	store storage.Storage,
-	logger *zap.Logger) AccrualWorker {
+	logger *zap.Logger,
+	exitCh <-chan os.Signal) AccrualWorker {
 
 	return accrualWorker{
 		client:  accrualApiClient,
 		store:   store,
 		logger:  logger,
+		exitCh:  exitCh,
 		channel: make(chan models.Order),
 	}
 }
@@ -41,20 +44,25 @@ func (wrk accrualWorker) Register(order models.Order) {
 }
 
 func (wrk accrualWorker) Run() {
+Loop:
 	for {
-		order := <-wrk.channel
-		orderInfo, err := wrk.client.GetOrderInfo(context.TODO(), order.Number)
-		if err != nil {
-			wrk.logger.Info(
-				"failed to get order info",
-				zap.String("order_number", order.Number),
-				zap.Error(err),
-			)
-			continue
-		}
+		select {
+		case order := <-wrk.channel:
+			orderInfo, err := wrk.client.GetOrderInfo(context.TODO(), order.Number)
+			if err != nil {
+				wrk.logger.Info(
+					"failed to get order info",
+					zap.String("order_number", order.Number),
+					zap.Error(err),
+				)
+				continue
+			}
 
-		ctx := context.TODO()
-		wrk.updateOrderWithBalance(ctx, order, orderInfo)
+			ctx := context.TODO()
+			wrk.updateOrderWithBalance(ctx, order, orderInfo)
+		case <-wrk.exitCh:
+			break Loop
+		}
 	}
 }
 

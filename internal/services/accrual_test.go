@@ -2,6 +2,7 @@ package services_test
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -25,6 +26,7 @@ func TestAccrualRun(t *testing.T) {
 	orderInfo := accrual.OrderInfo{Number: "123", Status: models.ProcessedOrder, Accrual: 10}
 	order := models.Order{ID: 1, UserID: 1, Number: "123"}
 	balance := models.Balance{ID: 1, UserID: 1}
+	exitCh := make(chan os.Signal)
 
 	logger := zaptest.NewLogger(t)
 	accrualApiClientMock := new(accrualApiClientMock)
@@ -45,7 +47,7 @@ func TestAccrualRun(t *testing.T) {
 		storageMock.EXPECT().
 			UpdateBalanceCurrentAmount(gomock.Any(), balance.ID, balance.CurrentAmount+orderInfo.Accrual).Return(nil)
 
-		accrualWrk := services.NewAccrualWorker(accrualApiClientMock, storageMock, logger)
+		accrualWrk := services.NewAccrualWorker(accrualApiClientMock, storageMock, logger, exitCh)
 		go accrualWrk.Run()
 		accrualWrk.Register(order)
 	})
@@ -64,7 +66,7 @@ func TestAccrualRun(t *testing.T) {
 		storageMock.EXPECT().
 			CreateBalance(gomock.Any(), order.UserID, orderInfo.Accrual).Return(models.Balance{ID: 1, UserID: order.UserID, CurrentAmount: orderInfo.Accrual}, nil)
 
-		accrualWrk := services.NewAccrualWorker(accrualApiClientMock, storageMock, logger)
+		accrualWrk := services.NewAccrualWorker(accrualApiClientMock, storageMock, logger, exitCh)
 		go accrualWrk.Run()
 		accrualWrk.Register(order)
 	})

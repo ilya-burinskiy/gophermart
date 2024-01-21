@@ -38,7 +38,7 @@ func main() {
 	signal.Notify(exitCh, syscall.SIGINT, syscall.SIGTERM)
 
 	configureUserRouter(db, router)
-	configureOrderRouter(db, logger, config, router)
+	configureOrderRouter(db, logger, config, exitCh, router)
 	configureBalanceRouter(db, router)
 	configureWithdrawalsRouter(db, router)
 
@@ -87,11 +87,12 @@ func configureOrderRouter(
 	store storage.Storage,
 	logger *zap.Logger,
 	config configs.Config,
+	exitCh <-chan os.Signal,
 	mainRouter chi.Router) {
 
 	handlers := handlers.NewOrderHandlers(store)
 	accrualApiClient := accrual.NewClient(config.AccrualBaseURL)
-	accrualSrv := services.NewAccrualWorker(accrualApiClient, store, logger)
+	accrualSrv := services.NewAccrualWorker(accrualApiClient, store, logger, exitCh)
 	go accrualSrv.Run()
 	createSrv := services.NewOrderCreateService(store, accrualSrv)
 	fetchSrv := services.NewUserOrdersFetcher(store)
