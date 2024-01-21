@@ -35,6 +35,7 @@ type Storage interface {
 	CreateWithdrawal(ctx context.Context, userID int, orderNumber string, sum int) (models.Withdrawal, error)
 
 	BeginTranscaction(ctx context.Context) (pgx.Tx, error)
+	Close()
 }
 
 type DBStorage struct {
@@ -359,6 +360,10 @@ func (db *DBStorage) CreateWithdrawal(ctx context.Context, userID int, orderNumb
 
 func (db *DBStorage) BeginTranscaction(ctx context.Context) (pgx.Tx, error) {
 	return db.pool.Begin(ctx)
+}
+
+func (db *DBStorage) Close() {
+	db.pool.Close()
 }
 
 //go:embed db/migrations/*.sql

@@ -51,6 +51,18 @@ func (mr *MockStorageMockRecorder) BeginTranscaction(arg0 interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTranscaction", reflect.TypeOf((*MockStorage)(nil).BeginTranscaction), arg0)
 }
 
+// Close mocks base method.
+func (m *MockStorage) Close() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Close")
+}
+
+// Close indicates an expected call of Close.
+func (mr *MockStorageMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockStorage)(nil).Close))
+}
+
 // CreateBalance mocks base method.
 func (m *MockStorage) CreateBalance(arg0 context.Context, arg1, arg2 int) (models.Balance, error) {
 	m.ctrl.T.Helper()
