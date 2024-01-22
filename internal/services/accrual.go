@@ -67,7 +67,7 @@ Loop:
 }
 
 func (wrk accrualWorker) updateOrderWithBalance(ctx context.Context, order models.Order, orderInfo accrual.OrderInfo) {
-	tx, err := wrk.store.BeginTranscaction(ctx)
+	tx, err := wrk.store.BeginTransaction(ctx)
 	if err != nil {
 		wrk.logger.Info("failed to start transaction", zap.Error(err))
 		return

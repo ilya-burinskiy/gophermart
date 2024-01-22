@@ -27,7 +27,7 @@ func TestCall(t *testing.T) {
 		txMock.EXPECT().Rollback(gomock.Any()).AnyTimes().Return(nil)
 
 		storeMock := mocks.NewMockStorage(ctrl)
-		storeMock.EXPECT().BeginTranscaction(gomock.Any()).Return(txMock, nil)
+		storeMock.EXPECT().BeginTransaction(gomock.Any()).Return(txMock, nil)
 		storeMock.EXPECT().CreateWithdrawal(ctx, user.ID, orderNumber, sum)
 		storeMock.EXPECT().FindBalanceByUserID(ctx, user.ID).Return(balance, nil)
 		storeMock.EXPECT().UpdateBalanceWithdrawnAmount(ctx, balance.ID, balance.WithdrawnAmount+sum).Return(nil)
@@ -46,7 +46,7 @@ func TestCall(t *testing.T) {
 
 		emptyBalance := models.Balance{ID: 1, UserID: user.ID}
 		storeMock := mocks.NewMockStorage(ctrl)
-		storeMock.EXPECT().BeginTranscaction(gomock.Any()).Return(txMock, nil)
+		storeMock.EXPECT().BeginTransaction(gomock.Any()).Return(txMock, nil)
 		storeMock.EXPECT().CreateWithdrawal(ctx, user.ID, orderNumber, sum)
 		storeMock.EXPECT().FindBalanceByUserID(ctx, user.ID).Return(models.Balance{}, storage.ErrBalanceNotFound{})
 		storeMock.EXPECT().CreateBalance(ctx, user.ID, 0).Return(emptyBalance, nil)

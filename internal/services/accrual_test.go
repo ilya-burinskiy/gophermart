@@ -41,7 +41,7 @@ func TestAccrualRun(t *testing.T) {
 		txMock.EXPECT().Rollback(gomock.Any()).AnyTimes().Return(nil)
 
 		storageMock := mocks.NewMockStorage(ctrl)
-		storageMock.EXPECT().BeginTranscaction(gomock.Any()).Return(txMock, nil)
+		storageMock.EXPECT().BeginTransaction(gomock.Any()).Return(txMock, nil)
 		storageMock.EXPECT().UpdateOrder(gomock.Any(), order.ID, orderInfo.Status, orderInfo.Accrual).Return(nil)
 		storageMock.EXPECT().FindBalanceByUserID(gomock.Any(), order.ID).Return(balance, nil)
 		storageMock.EXPECT().
@@ -59,7 +59,7 @@ func TestAccrualRun(t *testing.T) {
 		txMock.EXPECT().Rollback(gomock.Any()).AnyTimes().Return(nil)
 
 		storageMock := mocks.NewMockStorage(ctrl)
-		storageMock.EXPECT().BeginTranscaction(gomock.Any()).Return(txMock, nil)
+		storageMock.EXPECT().BeginTransaction(gomock.Any()).Return(txMock, nil)
 		storageMock.EXPECT().UpdateOrder(gomock.Any(), order.ID, orderInfo.Status, orderInfo.Accrual).Return(nil)
 		storageMock.EXPECT().
 			FindBalanceByUserID(gomock.Any(), order.UserID).Return(models.Balance{}, storage.ErrBalanceNotFound{Balance: models.Balance{UserID: order.UserID}})

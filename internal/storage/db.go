@@ -34,7 +34,7 @@ type Storage interface {
 	UserWithdrawals(ctx context.Context, userID int) ([]models.Withdrawal, error)
 	CreateWithdrawal(ctx context.Context, userID int, orderNumber string, sum int) (models.Withdrawal, error)
 
-	BeginTranscaction(ctx context.Context) (pgx.Tx, error)
+	BeginTransaction(ctx context.Context) (pgx.Tx, error)
 	Close()
 }
 
@@ -358,7 +358,7 @@ func (db *DBStorage) CreateWithdrawal(ctx context.Context, userID int, orderNumb
 	return withdrawal, nil
 }
 
-func (db *DBStorage) BeginTranscaction(ctx context.Context) (pgx.Tx, error) {
+func (db *DBStorage) BeginTransaction(ctx context.Context) (pgx.Tx, error) {
 	return db.pool.Begin(ctx)
 }
 

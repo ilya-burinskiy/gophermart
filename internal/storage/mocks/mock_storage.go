@@ -36,19 +36,19 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 	return m.recorder
 }
 
-// BeginTranscaction mocks base method.
-func (m *MockStorage) BeginTranscaction(arg0 context.Context) (pgx.Tx, error) {
+// BeginTransaction mocks base method.
+func (m *MockStorage) BeginTransaction(arg0 context.Context) (pgx.Tx, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BeginTranscaction", arg0)
+	ret := m.ctrl.Call(m, "BeginTransaction", arg0)
 	ret0, _ := ret[0].(pgx.Tx)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// BeginTranscaction indicates an expected call of BeginTranscaction.
-func (mr *MockStorageMockRecorder) BeginTranscaction(arg0 interface{}) *gomock.Call {
+// BeginTransaction indicates an expected call of BeginTransaction.
+func (mr *MockStorageMockRecorder) BeginTransaction(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTranscaction", reflect.TypeOf((*MockStorage)(nil).BeginTranscaction), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTransaction", reflect.TypeOf((*MockStorage)(nil).BeginTransaction), arg0)
 }
 
 // Close mocks base method.

@@ -31,7 +31,7 @@ func (srv withdrawalCreator) Call(
 	orderNumber string,
 	sum int) (models.Withdrawal, error) {
 
-	tx, err := srv.store.BeginTranscaction(ctx)
+	tx, err := srv.store.BeginTransaction(ctx)
 	if err != nil {
 		return models.Withdrawal{}, fmt.Errorf("failed to start transaction: %w", err)
 	}
