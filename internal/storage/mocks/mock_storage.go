@@ -36,21 +36,6 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 	return m.recorder
 }
 
-// BeginTransaction mocks base method.
-func (m *MockStorage) BeginTransaction(arg0 context.Context) (pgx.Tx, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BeginTransaction", arg0)
-	ret0, _ := ret[0].(pgx.Tx)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// BeginTransaction indicates an expected call of BeginTransaction.
-func (mr *MockStorageMockRecorder) BeginTransaction(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTransaction", reflect.TypeOf((*MockStorage)(nil).BeginTransaction), arg0)
-}
-
 // Close mocks base method.
 func (m *MockStorage) Close() {
 	m.ctrl.T.Helper()
@@ -63,19 +48,19 @@ func (mr *MockStorageMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockStorage)(nil).Close))
 }
 
-// CreateBalance mocks base method.
-func (m *MockStorage) CreateBalance(arg0 context.Context, arg1, arg2 int) (models.Balance, error) {
+// CreateBalanceTx mocks base method.
+func (m *MockStorage) CreateBalanceTx(arg0 context.Context, arg1 pgx.Tx, arg2, arg3 int) (models.Balance, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateBalance", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "CreateBalanceTx", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(models.Balance)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CreateBalance indicates an expected call of CreateBalance.
-func (mr *MockStorageMockRecorder) CreateBalance(arg0, arg1, arg2 interface{}) *gomock.Call {
+// CreateBalanceTx indicates an expected call of CreateBalanceTx.
+func (mr *MockStorageMockRecorder) CreateBalanceTx(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBalance", reflect.TypeOf((*MockStorage)(nil).CreateBalance), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBalanceTx", reflect.TypeOf((*MockStorage)(nil).CreateBalanceTx), arg0, arg1, arg2, arg3)
 }
 
 // CreateOrder mocks base method.
@@ -108,19 +93,19 @@ func (mr *MockStorageMockRecorder) CreateUser(arg0, arg1, arg2 interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockStorage)(nil).CreateUser), arg0, arg1, arg2)
 }
 
-// CreateWithdrawal mocks base method.
-func (m *MockStorage) CreateWithdrawal(arg0 context.Context, arg1 int, arg2 string, arg3 int) (models.Withdrawal, error) {
+// CreateWithdrawalTx mocks base method.
+func (m *MockStorage) CreateWithdrawalTx(arg0 context.Context, arg1 pgx.Tx, arg2 int, arg3 string, arg4 int) (models.Withdrawal, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateWithdrawal", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "CreateWithdrawalTx", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(models.Withdrawal)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CreateWithdrawal indicates an expected call of CreateWithdrawal.
-func (mr *MockStorageMockRecorder) CreateWithdrawal(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+// CreateWithdrawalTx indicates an expected call of CreateWithdrawalTx.
+func (mr *MockStorageMockRecorder) CreateWithdrawalTx(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateWithdrawal", reflect.TypeOf((*MockStorage)(nil).CreateWithdrawal), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateWithdrawalTx", reflect.TypeOf((*MockStorage)(nil).CreateWithdrawalTx), arg0, arg1, arg2, arg3, arg4)
 }
 
 // FindBalanceByUserID mocks base method.
@@ -136,6 +121,21 @@ func (m *MockStorage) FindBalanceByUserID(arg0 context.Context, arg1 int) (model
 func (mr *MockStorageMockRecorder) FindBalanceByUserID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindBalanceByUserID", reflect.TypeOf((*MockStorage)(nil).FindBalanceByUserID), arg0, arg1)
+}
+
+// FindBalanceByUserIDTx mocks base method.
+func (m *MockStorage) FindBalanceByUserIDTx(arg0 context.Context, arg1 pgx.Tx, arg2 int) (models.Balance, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindBalanceByUserIDTx", arg0, arg1, arg2)
+	ret0, _ := ret[0].(models.Balance)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindBalanceByUserIDTx indicates an expected call of FindBalanceByUserIDTx.
+func (mr *MockStorageMockRecorder) FindBalanceByUserIDTx(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindBalanceByUserIDTx", reflect.TypeOf((*MockStorage)(nil).FindBalanceByUserIDTx), arg0, arg1, arg2)
 }
 
 // FindOrderByNumber mocks base method.
@@ -168,46 +168,46 @@ func (mr *MockStorageMockRecorder) FindUserByLogin(arg0, arg1 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindUserByLogin", reflect.TypeOf((*MockStorage)(nil).FindUserByLogin), arg0, arg1)
 }
 
-// UpdateBalanceCurrentAmount mocks base method.
-func (m *MockStorage) UpdateBalanceCurrentAmount(arg0 context.Context, arg1, arg2 int) error {
+// UpdateBalanceCurrentAmountTx mocks base method.
+func (m *MockStorage) UpdateBalanceCurrentAmountTx(arg0 context.Context, arg1 pgx.Tx, arg2, arg3 int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateBalanceCurrentAmount", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "UpdateBalanceCurrentAmountTx", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateBalanceCurrentAmount indicates an expected call of UpdateBalanceCurrentAmount.
-func (mr *MockStorageMockRecorder) UpdateBalanceCurrentAmount(arg0, arg1, arg2 interface{}) *gomock.Call {
+// UpdateBalanceCurrentAmountTx indicates an expected call of UpdateBalanceCurrentAmountTx.
+func (mr *MockStorageMockRecorder) UpdateBalanceCurrentAmountTx(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBalanceCurrentAmount", reflect.TypeOf((*MockStorage)(nil).UpdateBalanceCurrentAmount), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBalanceCurrentAmountTx", reflect.TypeOf((*MockStorage)(nil).UpdateBalanceCurrentAmountTx), arg0, arg1, arg2, arg3)
 }
 
-// UpdateBalanceWithdrawnAmount mocks base method.
-func (m *MockStorage) UpdateBalanceWithdrawnAmount(arg0 context.Context, arg1, arg2 int) error {
+// UpdateBalanceWithdrawnAmountTx mocks base method.
+func (m *MockStorage) UpdateBalanceWithdrawnAmountTx(arg0 context.Context, arg1 pgx.Tx, arg2, arg3 int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateBalanceWithdrawnAmount", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "UpdateBalanceWithdrawnAmountTx", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateBalanceWithdrawnAmount indicates an expected call of UpdateBalanceWithdrawnAmount.
-func (mr *MockStorageMockRecorder) UpdateBalanceWithdrawnAmount(arg0, arg1, arg2 interface{}) *gomock.Call {
+// UpdateBalanceWithdrawnAmountTx indicates an expected call of UpdateBalanceWithdrawnAmountTx.
+func (mr *MockStorageMockRecorder) UpdateBalanceWithdrawnAmountTx(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBalanceWithdrawnAmount", reflect.TypeOf((*MockStorage)(nil).UpdateBalanceWithdrawnAmount), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBalanceWithdrawnAmountTx", reflect.TypeOf((*MockStorage)(nil).UpdateBalanceWithdrawnAmountTx), arg0, arg1, arg2, arg3)
 }
 
-// UpdateOrder mocks base method.
-func (m *MockStorage) UpdateOrder(arg0 context.Context, arg1 int, arg2 models.OrderStatus, arg3 int) error {
+// UpdateOrderTx mocks base method.
+func (m *MockStorage) UpdateOrderTx(arg0 context.Context, arg1 pgx.Tx, arg2 int, arg3 models.OrderStatus, arg4 int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateOrder", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "UpdateOrderTx", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateOrder indicates an expected call of UpdateOrder.
-func (mr *MockStorageMockRecorder) UpdateOrder(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+// UpdateOrderTx indicates an expected call of UpdateOrderTx.
+func (mr *MockStorageMockRecorder) UpdateOrderTx(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrder", reflect.TypeOf((*MockStorage)(nil).UpdateOrder), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrderTx", reflect.TypeOf((*MockStorage)(nil).UpdateOrderTx), arg0, arg1, arg2, arg3, arg4)
 }
 
 // UserOrders mocks base method.
@@ -238,4 +238,18 @@ func (m *MockStorage) UserWithdrawals(arg0 context.Context, arg1 int) ([]models.
 func (mr *MockStorageMockRecorder) UserWithdrawals(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserWithdrawals", reflect.TypeOf((*MockStorage)(nil).UserWithdrawals), arg0, arg1)
+}
+
+// WithinTranscaction mocks base method.
+func (m *MockStorage) WithinTranscaction(arg0 context.Context, arg1 func(context.Context, pgx.Tx) error) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithinTranscaction", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// WithinTranscaction indicates an expected call of WithinTranscaction.
+func (mr *MockStorageMockRecorder) WithinTranscaction(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithinTranscaction", reflect.TypeOf((*MockStorage)(nil).WithinTranscaction), arg0, arg1)
 }

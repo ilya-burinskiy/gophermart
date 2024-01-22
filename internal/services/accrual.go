@@ -8,6 +8,7 @@ import (
 	"github.com/ilya-burinskiy/gophermart/internal/accrual"
 	"github.com/ilya-burinskiy/gophermart/internal/models"
 	"github.com/ilya-burinskiy/gophermart/internal/storage"
+	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
 
@@ -67,42 +68,34 @@ Loop:
 }
 
 func (wrk accrualWorker) updateOrderWithBalance(ctx context.Context, order models.Order, orderInfo accrual.OrderInfo) {
-	tx, err := wrk.store.BeginTransaction(ctx)
-	if err != nil {
-		wrk.logger.Info("failed to start transaction", zap.Error(err))
-		return
-	}
-	defer tx.Rollback(ctx)
-
-	err = wrk.store.UpdateOrder(ctx, order.ID, orderInfo.Status, orderInfo.Accrual)
-	if err != nil {
-		wrk.logger.Info("failed to update order", zap.Error(err))
-		return
-	}
-
-	balance, err := wrk.store.FindBalanceByUserID(ctx, order.UserID)
-	if err != nil {
-		var notFoundErr storage.ErrBalanceNotFound
-		if errors.As(err, &notFoundErr) {
-			balance, err = wrk.store.CreateBalance(ctx, order.UserID, orderInfo.Accrual)
-			if err != nil {
-				wrk.logger.Info("failed to create balance", zap.Error(err))
-				return
-			}
+	wrk.store.WithinTranscaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
+		err := wrk.store.UpdateOrderTx(ctx, tx, order.ID, orderInfo.Status, orderInfo.Accrual)
+		if err != nil {
+			wrk.logger.Info("failed to update order", zap.Error(err))
+			return err
 		}
 
-		wrk.logger.Info("an unexpted error occured while trying to find balance", zap.Error(err))
-		return
-	}
+		balance, err := wrk.store.FindBalanceByUserIDTx(ctx, tx, order.UserID)
+		if err != nil {
+			var notFoundErr storage.ErrBalanceNotFound
+			if errors.As(err, &notFoundErr) {
+				balance, err = wrk.store.CreateBalanceTx(ctx, tx, order.UserID, orderInfo.Accrual)
+				if err != nil {
+					wrk.logger.Info("failed to create balance", zap.Error(err))
+					return err
+				}
+			}
 
-	err = wrk.store.UpdateBalanceCurrentAmount(ctx, balance.ID, balance.CurrentAmount+orderInfo.Accrual)
-	if err != nil {
-		wrk.logger.Info("failed to updage balance current amount", zap.Error(err))
-		return
-	}
+			wrk.logger.Info("an unexpted error occured while trying to find balance", zap.Error(err))
+			return err
+		}
 
-	err = tx.Commit(ctx)
-	if err != nil {
-		wrk.logger.Info("failed to commit transaction", zap.Error(err))
-	}
+		err = wrk.store.UpdateBalanceCurrentAmountTx(ctx, tx, balance.ID, balance.CurrentAmount+orderInfo.Accrual)
+		if err != nil {
+			wrk.logger.Info("failed to updage balance current amount", zap.Error(err))
+			return err
+		}
+
+		return nil
+	})
 }

@@ -24,17 +24,18 @@ type Storage interface {
 
 	CreateOrder(ctx context.Context, userID int, number string, status models.OrderStatus) (models.Order, error)
 	FindOrderByNumber(ctx context.Context, number string) (models.Order, error)
-	UpdateOrder(ctx context.Context, orderID int, status models.OrderStatus, accrual int) error
+	UpdateOrderTx(ctx context.Context, tx pgx.Tx, orderID int, status models.OrderStatus, accrual int) error
 
-	CreateBalance(ctx context.Context, userID, currentAmount int) (models.Balance, error)
-	UpdateBalanceCurrentAmount(ctx context.Context, balanceID, amount int) error
-	UpdateBalanceWithdrawnAmount(ctx context.Context, balanceID, amount int) error
+	CreateBalanceTx(ctx context.Context, tx pgx.Tx, userID, currentAmount int) (models.Balance, error)
+	UpdateBalanceCurrentAmountTx(ctx context.Context, tx pgx.Tx, balanceID, amount int) error
+	UpdateBalanceWithdrawnAmountTx(ctx context.Context, tx pgx.Tx, balanceID, amount int) error
 	FindBalanceByUserID(ctx context.Context, userID int) (models.Balance, error)
+	FindBalanceByUserIDTx(ctx context.Context, tx pgx.Tx, userID int) (models.Balance, error)
 
 	UserWithdrawals(ctx context.Context, userID int) ([]models.Withdrawal, error)
-	CreateWithdrawal(ctx context.Context, userID int, orderNumber string, sum int) (models.Withdrawal, error)
+	CreateWithdrawalTx(ctx context.Context, tx pgx.Tx, userID int, orderNumber string, sum int) (models.Withdrawal, error)
 
-	BeginTransaction(ctx context.Context) (pgx.Tx, error)
+	WithinTranscaction(ctx context.Context, f func(ctx context.Context, tx pgx.Tx) error) error
 	Close()
 }
 
@@ -209,8 +210,8 @@ func (db *DBStorage) FindOrderByNumber(ctx context.Context, number string) (mode
 	return order, nil
 }
 
-func (db *DBStorage) CreateBalance(ctx context.Context, userID, currentAmount int) (models.Balance, error) {
-	row := db.pool.QueryRow(
+func (db *DBStorage) CreateBalanceTx(ctx context.Context, tx pgx.Tx, userID, currentAmount int) (models.Balance, error) {
+	row := tx.QueryRow(
 		ctx,
 		`INSERT INTO "balances" ("user_id", "current_amount")
 		 VALUES (@userID, @currentAmount) RETURNING "id"`,
@@ -235,8 +236,8 @@ func (db *DBStorage) CreateBalance(ctx context.Context, userID, currentAmount in
 	return balance, nil
 }
 
-func (db *DBStorage) UpdateBalanceCurrentAmount(ctx context.Context, balanceID, amount int) error {
-	_, err := db.pool.Exec(
+func (db *DBStorage) UpdateBalanceCurrentAmountTx(ctx context.Context, tx pgx.Tx, balanceID, amount int) error {
+	_, err := tx.Exec(
 		ctx,
 		`UPDATE "balances" SET "current_amount" = @currentAmount WHERE "id" = @balanceID`,
 		pgx.NamedArgs{"currentAmount": amount, "balanceID": balanceID},
@@ -248,8 +249,8 @@ func (db *DBStorage) UpdateBalanceCurrentAmount(ctx context.Context, balanceID, 
 	return nil
 }
 
-func (db *DBStorage) UpdateBalanceWithdrawnAmount(ctx context.Context, balanceID, amount int) error {
-	_, err := db.pool.Exec(
+func (db *DBStorage) UpdateBalanceWithdrawnAmountTx(ctx context.Context, tx pgx.Tx, balanceID, amount int) error {
+	_, err := tx.Exec(
 		ctx,
 		`UPDATE "balances" SET "withdrawn_amount" = @withdrawnAmount WHERE "id" = @balanceID`,
 		pgx.NamedArgs{"withdrawnAmount": amount, "balanceID": balanceID},
@@ -283,8 +284,30 @@ func (db *DBStorage) FindBalanceByUserID(ctx context.Context, userID int) (model
 	return balance, nil
 }
 
-func (db *DBStorage) UpdateOrder(ctx context.Context, orderID int, status models.OrderStatus, accrual int) error {
-	_, err := db.pool.Exec(
+func (db *DBStorage) FindBalanceByUserIDTx(ctx context.Context, tx pgx.Tx, userID int) (models.Balance, error) {
+	row := tx.QueryRow(
+		ctx,
+		`SELECT "id", "current_amount", "withdrawn_amount" FROM "balances" WHERE "user_id" = @userID`,
+		pgx.NamedArgs{"userID": userID},
+	)
+	balance := models.Balance{UserID: userID}
+	var id, currentAmount, withdrawnAmount int
+	err := row.Scan(&id, &currentAmount, &withdrawnAmount)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return balance, ErrBalanceNotFound{Balance: balance}
+		}
+		return balance, fmt.Errorf("failed to find balance: %w", err)
+	}
+	balance.ID = id
+	balance.CurrentAmount = currentAmount
+	balance.WithdrawnAmount = withdrawnAmount
+
+	return balance, nil
+}
+
+func (db *DBStorage) UpdateOrderTx(ctx context.Context, tx pgx.Tx, orderID int, status models.OrderStatus, accrual int) error {
+	_, err := tx.Exec(
 		ctx,
 		`UPDATE "orders" SET "status" = @status, "accrual" = @accrual WHERE "id" = @orderID`,
 		pgx.NamedArgs{"status": status, "accrual": accrual, "orderID": orderID},
@@ -334,9 +357,9 @@ func (db *DBStorage) UserWithdrawals(ctx context.Context, userID int) ([]models.
 	return result, nil
 }
 
-func (db *DBStorage) CreateWithdrawal(ctx context.Context, userID int, orderNumber string, sum int) (models.Withdrawal, error) {
+func (db *DBStorage) CreateWithdrawalTx(ctx context.Context, tx pgx.Tx, userID int, orderNumber string, sum int) (models.Withdrawal, error) {
 	currentTime := time.Now()
-	row := db.pool.QueryRow(
+	row := tx.QueryRow(
 		ctx,
 		`INSERT INTO "withdrawals" ("order_number", "user_id", "sum", "processed_at")
 		 VALUES (@orderNumber, @userID, @sum, @processedAt) RETURNING "id"`,
@@ -358,8 +381,24 @@ func (db *DBStorage) CreateWithdrawal(ctx context.Context, userID int, orderNumb
 	return withdrawal, nil
 }
 
-func (db *DBStorage) BeginTransaction(ctx context.Context) (pgx.Tx, error) {
-	return db.pool.Begin(ctx)
+func (db *DBStorage) WithinTranscaction(ctx context.Context, f func(ctx context.Context, tx pgx.Tx) error) error {
+	tx, err := db.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	if err = f(ctx, tx); err != nil {
+		if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
+			return fmt.Errorf("failed to rollback transaction: %w", rollbackErr)
+		}
+		return err
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
 
 func (db *DBStorage) Close() {

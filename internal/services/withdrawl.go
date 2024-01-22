@@ -7,6 +7,7 @@ import (
 
 	"github.com/ilya-burinskiy/gophermart/internal/models"
 	"github.com/ilya-burinskiy/gophermart/internal/storage"
+	"github.com/jackc/pgx/v5"
 )
 
 var ErrNotEnoughAmount = errors.New("not enough amount on balance")
@@ -31,46 +32,42 @@ func (srv withdrawalCreator) Call(
 	orderNumber string,
 	sum int) (models.Withdrawal, error) {
 
-	tx, err := srv.store.BeginTransaction(ctx)
-	if err != nil {
-		return models.Withdrawal{}, fmt.Errorf("failed to start transaction: %w", err)
-	}
-	defer tx.Rollback(ctx)
+	var withdrawal models.Withdrawal
+	err := srv.store.WithinTranscaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		withdrawal, err = srv.store.CreateWithdrawalTx(ctx, tx, userID, orderNumber, sum)
+		if err != nil {
+			return err
+		}
 
-	withdrawal, err := srv.store.CreateWithdrawal(ctx, userID, orderNumber, sum)
-	if err != nil {
-		return withdrawal, err
-	}
-
-	balance, err := srv.store.FindBalanceByUserID(ctx, userID)
-	if err != nil {
-		var notFoundErr storage.ErrBalanceNotFound
-		if errors.As(err, &notFoundErr) {
-			balance, err = srv.store.CreateBalance(ctx, userID, 0)
-			if err != nil {
-				return withdrawal, err
+		balance, err := srv.store.FindBalanceByUserIDTx(ctx, tx, userID)
+		if err != nil {
+			var notFoundErr storage.ErrBalanceNotFound
+			if errors.As(err, &notFoundErr) {
+				balance, err = srv.store.CreateBalanceTx(ctx, tx, userID, 0)
+				if err != nil {
+					return err
+				}
+			} else {
+				return fmt.Errorf("an unexpected error occured while trying to find balance: %w", err)
 			}
-		} else {
-			return withdrawal, fmt.Errorf("an unexpected error occured while trying to find balance: %w", err)
-		}
-	}
-
-	if balance.CurrentAmount >= sum {
-		err = srv.store.UpdateBalanceWithdrawnAmount(ctx, balance.ID, balance.WithdrawnAmount+sum)
-		if err != nil {
-			return withdrawal, err
-		}
-		err = srv.store.UpdateBalanceCurrentAmount(ctx, balance.ID, balance.CurrentAmount-sum)
-		if err != nil {
-			return withdrawal, err
 		}
 
-		if err = tx.Commit(ctx); err != nil {
-			return withdrawal, fmt.Errorf("failed to commit transaction: %w", err)
+		if balance.CurrentAmount >= sum {
+			err = srv.store.UpdateBalanceWithdrawnAmountTx(ctx, tx, balance.ID, balance.WithdrawnAmount+sum)
+			if err != nil {
+				return err
+			}
+			err = srv.store.UpdateBalanceCurrentAmountTx(ctx, tx, balance.ID, balance.CurrentAmount-sum)
+			if err != nil {
+				return err
+			}
+
+			return nil
 		}
 
-		return withdrawal, nil
-	}
+		return ErrNotEnoughAmount
+	})
 
-	return withdrawal, ErrNotEnoughAmount
+	return withdrawal, err
 }
