@@ -50,7 +50,7 @@ func (h UserHandlers) Register(registerSrv services.UserRegistrator) func(http.R
 			return
 		}
 
-		setJWTCookie(w, jwtStr)
+		auth.SetJWTCookie(w, jwtStr)
 		w.WriteHeader(http.StatusOK)
 	}
 }
@@ -87,7 +87,7 @@ func (h UserHandlers) Authenticate(authSrv services.UserAuthenticator) func(http
 			return
 		}
 
-		setJWTCookie(w, jwtStr)
+		auth.SetJWTCookie(w, jwtStr)
 		w.WriteHeader(http.StatusOK)
 	}
 }

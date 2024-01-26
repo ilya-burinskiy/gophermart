@@ -3,6 +3,7 @@ package auth
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -43,4 +44,16 @@ func BuildJWTString(user models.User) (string, error) {
 		return "", fmt.Errorf("failed to sign token: %w", err)
 	}
 	return tokenString, nil
+}
+
+func SetJWTCookie(w http.ResponseWriter, token string) {
+	http.SetCookie(
+		w,
+		&http.Cookie{
+			Name:     "jwt",
+			Value:    token,
+			MaxAge:   int(TokenExp / time.Second),
+			HttpOnly: true,
+		},
+	)
 }
