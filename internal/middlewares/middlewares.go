@@ -9,6 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/ilya-burinskiy/gophermart/internal/auth"
 	"github.com/ilya-burinskiy/gophermart/internal/compress"
+	"github.com/ilya-burinskiy/gophermart/internal/configs"
 	"go.uber.org/zap"
 )
 
@@ -97,7 +98,7 @@ func Authenticate(h http.Handler) http.Handler {
 
 		claims := &auth.Claims{}
 		token, err := jwt.ParseWithClaims(cookie.Value, claims, func(token *jwt.Token) (interface{}, error) {
-			return []byte(auth.SecretKey), nil
+			return []byte(configs.SecretKey), nil
 		})
 		if err != nil || !token.Valid {
 			w.WriteHeader(http.StatusUnauthorized)

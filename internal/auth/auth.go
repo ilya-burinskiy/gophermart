@@ -7,13 +7,11 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/ilya-burinskiy/gophermart/internal/configs"
 	"github.com/ilya-burinskiy/gophermart/internal/models"
 
 	"golang.org/x/crypto/bcrypt"
 )
-
-const TokenExp = 24 * time.Hour
-const SecretKey = "secret"
 
 var ErrInvalidCreds = errors.New("invalid login or password")
 
@@ -34,12 +32,11 @@ func ValidatePasswordHash(password, hash string) bool {
 func BuildJWTString(user models.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenExp)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(configs.AuthTokenExp)),
 		},
 		UserID: user.ID,
 	})
-
-	tokenString, err := token.SignedString([]byte(SecretKey))
+	tokenString, err := token.SignedString([]byte(configs.SecretKey))
 	if err != nil {
 		return "", fmt.Errorf("failed to sign token: %w", err)
 	}
@@ -52,7 +49,7 @@ func SetJWTCookie(w http.ResponseWriter, token string) {
 		&http.Cookie{
 			Name:     "jwt",
 			Value:    token,
-			MaxAge:   int(TokenExp / time.Second),
+			MaxAge:   int(configs.AuthTokenExp / time.Second),
 			HttpOnly: true,
 		},
 	)

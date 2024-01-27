@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ilya-burinskiy/gophermart/internal/auth"
+	"github.com/ilya-burinskiy/gophermart/internal/configs"
 	"github.com/ilya-burinskiy/gophermart/internal/models"
 	"github.com/stretchr/testify/require"
 )
@@ -38,7 +39,7 @@ func generateAuthCookie(user models.User, t *testing.T) *http.Cookie {
 	return &http.Cookie{
 		Name:     "jwt",
 		Value:    jwtStr,
-		MaxAge:   int(auth.TokenExp / time.Second),
+		MaxAge:   int(configs.AuthTokenExp / time.Second),
 		HttpOnly: true,
 	}
 }

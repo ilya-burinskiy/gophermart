@@ -3,7 +3,11 @@ package configs
 import (
 	"flag"
 	"os"
+	"time"
 )
+
+const AuthTokenExp = 24 * time.Hour
+const SecretKey = "secret"
 
 type Config struct {
 	RunAddr        string
