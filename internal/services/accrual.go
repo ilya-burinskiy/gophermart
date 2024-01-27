@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"errors"
-	"os"
 
 	"github.com/ilya-burinskiy/gophermart/internal/accrual"
 	"github.com/ilya-burinskiy/gophermart/internal/models"
@@ -22,14 +21,14 @@ type accrualWorker struct {
 	store   storage.Storage
 	logger  *zap.Logger
 	channel chan models.Order
-	exitCh  <-chan os.Signal
+	exitCh  <-chan struct{}
 }
 
 func NewAccrualWorker(
 	accrualApiClient accrual.ApiClient,
 	store storage.Storage,
 	logger *zap.Logger,
-	exitCh <-chan os.Signal) AccrualWorker {
+	exitCh <-chan struct{}) AccrualWorker {
 
 	return accrualWorker{
 		client:  accrualApiClient,

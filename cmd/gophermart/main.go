@@ -34,8 +34,9 @@ func main() {
 		middleware.AllowContentEncoding("gzip"),
 	)
 
-	exitCh := make(chan os.Signal, 1)
-	signal.Notify(exitCh, syscall.SIGINT, syscall.SIGTERM)
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	exitCh := make(chan struct{})
 
 	configureUserRouter(db, router)
 	configureOrderRouter(db, logger, config, exitCh, router)
@@ -46,14 +47,13 @@ func main() {
 		Handler: router,
 		Addr:    config.RunAddr,
 	}
-	go onExit(db, &server, exitCh)
+	go func() {
+		<-sigCh
+		exitCh <- struct{}{}
+		db.Close()
+		server.Shutdown(context.TODO())
+	}()
 	server.ListenAndServe()
-}
-
-func onExit(store storage.Storage, srv *http.Server, exitCh <-chan os.Signal) {
-	<-exitCh
-	store.Close()
-	srv.Shutdown(context.TODO())
 }
 
 func configureLogger(level string) *zap.Logger {
@@ -87,7 +87,7 @@ func configureOrderRouter(
 	store storage.Storage,
 	logger *zap.Logger,
 	config configs.Config,
-	exitCh <-chan os.Signal,
+	exitCh <-chan struct{},
 	mainRouter chi.Router) {
 
 	handlers := handlers.NewOrderHandlers(store)
