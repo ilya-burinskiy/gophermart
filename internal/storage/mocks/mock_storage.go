@@ -108,6 +108,20 @@ func (mr *MockStorageMockRecorder) CreateWithdrawalTx(arg0, arg1, arg2, arg3, ar
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateWithdrawalTx", reflect.TypeOf((*MockStorage)(nil).CreateWithdrawalTx), arg0, arg1, arg2, arg3, arg4)
 }
 
+// DeleteOrder mocks base method.
+func (m *MockStorage) DeleteOrder(arg0 context.Context, arg1 int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteOrder", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteOrder indicates an expected call of DeleteOrder.
+func (mr *MockStorageMockRecorder) DeleteOrder(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrder", reflect.TypeOf((*MockStorage)(nil).DeleteOrder), arg0, arg1)
+}
+
 // FindBalanceByUserID mocks base method.
 func (m *MockStorage) FindBalanceByUserID(arg0 context.Context, arg1 int) (models.Balance, error) {
 	m.ctrl.T.Helper()

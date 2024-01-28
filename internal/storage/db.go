@@ -23,6 +23,7 @@ type Storage interface {
 	UserOrders(ctx context.Context, userID int) ([]models.Order, error)
 
 	CreateOrder(ctx context.Context, userID int, number string, status models.OrderStatus) (models.Order, error)
+	DeleteOrder(ctx context.Context, orderID int) error
 	FindOrderByNumber(ctx context.Context, number string) (models.Order, error)
 	UpdateOrderTx(ctx context.Context, tx pgx.Tx, orderID int, status models.OrderStatus, accrual int) error
 
@@ -180,6 +181,15 @@ func (db *DBStorage) CreateOrder(
 	order.ID = orderID
 
 	return order, nil
+}
+
+func (db *DBStorage) DeleteOrder(ctx context.Context, orderID int) error {
+	_, err := db.pool.Exec(ctx, `DELETE FROM "orders" WHERE "id" = @id`, pgx.NamedArgs{"id": orderID})
+	if err != nil {
+		return fmt.Errorf("failed to delete order id=%d: %w", orderID, err)
+	}
+
+	return nil
 }
 
 func (db *DBStorage) FindOrderByNumber(ctx context.Context, number string) (models.Order, error) {
