@@ -92,7 +92,7 @@ func configureOrderRouter(
 
 	handlers := handlers.NewOrderHandlers(store)
 	accrualApiClient := accrual.NewClient(config.AccrualBaseURL)
-	accrualSrv := services.NewAccrualWorker(accrualApiClient, store, logger, exitCh)
+	accrualSrv := services.NewAccrualWorker(accrualApiClient, store, logger, 16, exitCh)
 	go accrualSrv.Run()
 	createSrv := services.NewOrderCreateService(store, accrualSrv)
 	fetchSrv := services.NewUserOrdersFetcher(store)

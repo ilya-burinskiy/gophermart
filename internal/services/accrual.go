@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/ilya-burinskiy/gophermart/internal/accrual"
 	"github.com/ilya-burinskiy/gophermart/internal/models"
@@ -17,61 +18,69 @@ type AccrualWorker interface {
 }
 
 type accrualWorker struct {
-	client  accrual.ApiClient
-	store   storage.Storage
-	logger  *zap.Logger
-	channel chan models.Order
-	exitCh  <-chan struct{}
+	client      accrual.ApiClient
+	store       storage.Storage
+	logger      *zap.Logger
+	jobsChannel chan models.Order
+	workersNum  int
+	exitCh      <-chan struct{}
 }
 
 func NewAccrualWorker(
 	accrualApiClient accrual.ApiClient,
 	store storage.Storage,
 	logger *zap.Logger,
+	workersNum int,
 	exitCh <-chan struct{}) AccrualWorker {
 
 	return accrualWorker{
-		client:  accrualApiClient,
-		store:   store,
-		logger:  logger,
-		exitCh:  exitCh,
-		channel: make(chan models.Order),
+		client:      accrualApiClient,
+		store:       store,
+		logger:      logger,
+		jobsChannel: make(chan models.Order, workersNum),
+		workersNum:  workersNum,
+		exitCh:      exitCh,
 	}
 }
 
 func (wrk accrualWorker) Register(order models.Order) {
-	wrk.channel <- order
+	wrk.jobsChannel <- order
 }
 
 func (wrk accrualWorker) Run() {
-Loop:
-	for {
-		select {
-		case order := <-wrk.channel:
-			orderInfo, err := wrk.client.GetOrderInfo(context.TODO(), order.Number)
-			if err != nil {
-				wrk.logger.Info(
-					"failed to get order info",
-					zap.String("order_number", order.Number),
-					zap.Error(err),
-				)
-				continue
-			}
+	for w := 1; w <= wrk.workersNum; w++ {
+		go wrk.processOrder()
+	}
 
-			ctx := context.TODO()
-			wrk.updateOrderWithBalance(ctx, order, orderInfo)
-		case <-wrk.exitCh:
-			break Loop
+	<-wrk.exitCh
+	wrk.logger.Info("finishing accrual worker")
+	close(wrk.jobsChannel)
+}
+
+func (wrk accrualWorker) processOrder() {
+	ctx := context.TODO()
+	for order := range wrk.jobsChannel {
+		orderInfo, err := wrk.client.GetOrderInfo(ctx, order.Number)
+		if err != nil {
+			wrk.logger.Info("accrual worker error", zap.Error(err))
+			continue
+		}
+		err = wrk.updateOrderWithBalance(ctx, order, orderInfo)
+		if err != nil {
+			wrk.logger.Info("accrual worker error", zap.Error(err))
 		}
 	}
 }
 
-func (wrk accrualWorker) updateOrderWithBalance(ctx context.Context, order models.Order, orderInfo accrual.OrderInfo) {
-	wrk.store.WithinTranscaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
+func (wrk accrualWorker) updateOrderWithBalance(
+	ctx context.Context,
+	order models.Order,
+	orderInfo accrual.OrderInfo) error {
+
+	err := wrk.store.WithinTranscaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
 		err := wrk.store.UpdateOrderTx(ctx, tx, order.ID, orderInfo.Status, orderInfo.Accrual)
 		if err != nil {
-			wrk.logger.Info("failed to update order", zap.Error(err))
-			return err
+			return fmt.Errorf("failed to update order: %w", err)
 		}
 
 		balance, err := wrk.store.FindBalanceByUserIDTx(ctx, tx, order.UserID)
@@ -80,21 +89,20 @@ func (wrk accrualWorker) updateOrderWithBalance(ctx context.Context, order model
 			if errors.As(err, &notFoundErr) {
 				balance, err = wrk.store.CreateBalanceTx(ctx, tx, order.UserID, orderInfo.Accrual)
 				if err != nil {
-					wrk.logger.Info("failed to create balance", zap.Error(err))
-					return err
+					return fmt.Errorf("failed to create balance: %w", err)
 				}
 			}
 
-			wrk.logger.Info("an unexpted error occured while trying to find balance", zap.Error(err))
-			return err
+			return fmt.Errorf("an unexpted error occured while trying to find balance: %w", err)
 		}
 
 		err = wrk.store.UpdateBalanceCurrentAmountTx(ctx, tx, balance.ID, balance.CurrentAmount+orderInfo.Accrual)
 		if err != nil {
-			wrk.logger.Info("failed to updage balance current amount", zap.Error(err))
-			return err
+			return fmt.Errorf("failed to updage balance current amount: %w", err)
 		}
 
 		return nil
 	})
+
+	return err
 }
