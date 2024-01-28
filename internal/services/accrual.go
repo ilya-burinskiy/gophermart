@@ -63,6 +63,10 @@ func (wrk accrualWorker) processOrder() {
 		orderInfo, err := wrk.client.GetOrderInfo(ctx, order.Number)
 		if err != nil {
 			wrk.logger.Info("accrual worker error", zap.Error(err))
+			err = wrk.store.DeleteOrder(ctx, order.ID)
+			if err != nil {
+				wrk.logger.Info("accrual worker error", zap.Error(err))
+			}
 			continue
 		}
 		err = wrk.updateOrderWithBalance(ctx, order, orderInfo)
