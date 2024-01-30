@@ -47,7 +47,7 @@ func (srv OrderCreateService) Call(ctx context.Context, number string, userID in
 		ctx,
 		userID,
 		number,
-		models.RegisteredOrder,
+		models.NewOrder,
 	)
 
 	if err != nil {
