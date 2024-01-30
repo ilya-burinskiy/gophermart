@@ -119,26 +119,7 @@ func (db *DBStorage) UserOrders(ctx context.Context, userID int) ([]models.Order
 		return nil, fmt.Errorf("failed to fetch orders: %w", err)
 	}
 
-	result, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (models.Order, error) {
-		var (
-			id        int
-			userID    int
-			number    string
-			status    models.OrderStatus
-			accrual   int
-			createdAt time.Time
-		)
-		err := row.Scan(&id, &userID, &number, &status, &accrual, &createdAt)
-
-		return models.Order{
-			ID:        id,
-			UserID:    userID,
-			Number:    number,
-			Status:    status,
-			Accrual:   accrual,
-			CreatedAt: createdAt,
-		}, err
-	})
+	result, err := pgx.CollectRows(rows, rowToOrder)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch orders: %w", err)
 	}
@@ -233,26 +214,7 @@ func (db *DBStorage) NewOrders(ctx context.Context) ([]models.Order, error) {
 		return nil, fmt.Errorf("failed to fetch orders: %w", err)
 	}
 
-	result, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (models.Order, error) {
-		var (
-			id        int
-			userID    int
-			number    string
-			status    models.OrderStatus
-			accrual   int
-			createdAt time.Time
-		)
-		err := row.Scan(&id, &userID, &number, &status, &accrual, &createdAt)
-
-		return models.Order{
-			ID:        id,
-			UserID:    userID,
-			Number:    number,
-			Status:    status,
-			Accrual:   accrual,
-			CreatedAt: createdAt,
-		}, err
-	})
+	result, err := pgx.CollectRows(rows, rowToOrder)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch orders: %w", err)
 	}
@@ -453,6 +415,27 @@ func (db *DBStorage) WithinTranscaction(ctx context.Context, f func(ctx context.
 
 func (db *DBStorage) Close() {
 	db.pool.Close()
+}
+
+func rowToOrder(row pgx.CollectableRow) (models.Order, error) {
+	var (
+		id        int
+		userID    int
+		number    string
+		status    models.OrderStatus
+		accrual   int
+		createdAt time.Time
+	)
+	err := row.Scan(&id, &userID, &number, &status, &accrual, &createdAt)
+
+	return models.Order{
+		ID:        id,
+		UserID:    userID,
+		Number:    number,
+		Status:    status,
+		Accrual:   accrual,
+		CreatedAt: createdAt,
+	}, err
 }
 
 //go:embed db/migrations/*.sql
