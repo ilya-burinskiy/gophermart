@@ -26,6 +26,7 @@ type Storage interface {
 	DeleteOrder(ctx context.Context, orderID int) error
 	FindOrderByNumber(ctx context.Context, number string) (models.Order, error)
 	UpdateOrderTx(ctx context.Context, tx pgx.Tx, orderID int, status models.OrderStatus, accrual int) error
+	NewOrders(ctx context.Context) ([]models.Order, error)
 
 	CreateBalanceTx(ctx context.Context, tx pgx.Tx, userID, currentAmount int) (models.Balance, error)
 	UpdateBalanceCurrentAmountTx(ctx context.Context, tx pgx.Tx, balanceID, amount int) error
@@ -218,6 +219,45 @@ func (db *DBStorage) FindOrderByNumber(ctx context.Context, number string) (mode
 	order.CreatedAt = createdAt
 
 	return order, nil
+}
+
+func (db *DBStorage) NewOrders(ctx context.Context) ([]models.Order, error) {
+	rows, err := db.pool.Query(
+		ctx,
+		`SELECT "id", "user_id", "number", "status", "accrual", "created_at"
+		 FROM "orders"
+		 WHERE "status" = @status`,
+		pgx.NamedArgs{"status": models.NewOrder},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch orders: %w", err)
+	}
+
+	result, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (models.Order, error) {
+		var (
+			id        int
+			userID    int
+			number    string
+			status    models.OrderStatus
+			accrual   int
+			createdAt time.Time
+		)
+		err := row.Scan(&id, &userID, &number, &status, &accrual, &createdAt)
+
+		return models.Order{
+			ID:        id,
+			UserID:    userID,
+			Number:    number,
+			Status:    status,
+			Accrual:   accrual,
+			CreatedAt: createdAt,
+		}, err
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch orders: %w", err)
+	}
+
+	return result, nil
 }
 
 func (db *DBStorage) CreateBalanceTx(ctx context.Context, tx pgx.Tx, userID, currentAmount int) (models.Balance, error) {

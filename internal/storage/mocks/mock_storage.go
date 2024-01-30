@@ -182,6 +182,21 @@ func (mr *MockStorageMockRecorder) FindUserByLogin(arg0, arg1 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindUserByLogin", reflect.TypeOf((*MockStorage)(nil).FindUserByLogin), arg0, arg1)
 }
 
+// NewOrders mocks base method.
+func (m *MockStorage) NewOrders(arg0 context.Context) ([]models.Order, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NewOrders", arg0)
+	ret0, _ := ret[0].([]models.Order)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NewOrders indicates an expected call of NewOrders.
+func (mr *MockStorageMockRecorder) NewOrders(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewOrders", reflect.TypeOf((*MockStorage)(nil).NewOrders), arg0)
+}
+
 // UpdateBalanceCurrentAmountTx mocks base method.
 func (m *MockStorage) UpdateBalanceCurrentAmountTx(arg0 context.Context, arg1 pgx.Tx, arg2, arg3 int) error {
 	m.ctrl.T.Helper()
