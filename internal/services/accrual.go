@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/ilya-burinskiy/gophermart/internal/accrual"
 	"github.com/ilya-burinskiy/gophermart/internal/models"
@@ -14,16 +15,14 @@ import (
 
 type AccrualWorker interface {
 	Run()
-	Register(order models.Order)
 }
 
 type accrualWorker struct {
-	client      accrual.ApiClient
-	store       storage.Storage
-	logger      *zap.Logger
-	jobsChannel chan models.Order
-	workersNum  int
-	exitCh      <-chan struct{}
+	client     accrual.ApiClient
+	store      storage.Storage
+	logger     *zap.Logger
+	workersNum int
+	exitCh     <-chan struct{}
 }
 
 func NewAccrualWorker(
@@ -34,32 +33,46 @@ func NewAccrualWorker(
 	exitCh <-chan struct{}) AccrualWorker {
 
 	return accrualWorker{
-		client:      accrualApiClient,
-		store:       store,
-		logger:      logger,
-		jobsChannel: make(chan models.Order, workersNum),
-		workersNum:  workersNum,
-		exitCh:      exitCh,
+		client:     accrualApiClient,
+		store:      store,
+		logger:     logger,
+		workersNum: workersNum,
+		exitCh:     exitCh,
 	}
-}
-
-func (wrk accrualWorker) Register(order models.Order) {
-	wrk.jobsChannel <- order
 }
 
 func (wrk accrualWorker) Run() {
+	jobsChannel := make(chan models.Order, wrk.workersNum)
+	ticker := time.NewTicker(5 * time.Second)
+	ctx := context.TODO()
+
 	for w := 1; w <= wrk.workersNum; w++ {
-		go wrk.processOrder()
+		go wrk.processOrder(jobsChannel)
 	}
 
-	<-wrk.exitCh
-	wrk.logger.Info("finishing accrual worker")
-	close(wrk.jobsChannel)
+	for {
+		select {
+		case <-ticker.C:
+			orders, err := wrk.store.NewOrders(ctx)
+			if err != nil {
+				wrk.logger.Info("run accrual worker", zap.Error(err))
+				continue
+			}
+
+			for _, order := range orders {
+				jobsChannel <- order
+			}
+		case <-wrk.exitCh:
+			wrk.logger.Info("finishing accrual worker")
+			close(jobsChannel)
+			return
+		}
+	}
 }
 
-func (wrk accrualWorker) processOrder() {
+func (wrk accrualWorker) processOrder(jobsChannel <-chan models.Order) {
 	ctx := context.TODO()
-	for order := range wrk.jobsChannel {
+	for order := range jobsChannel {
 		orderInfo, err := wrk.client.GetOrderInfo(ctx, order.Number)
 		if err != nil {
 			wrk.logger.Info("accrual worker error", zap.Error(err))
