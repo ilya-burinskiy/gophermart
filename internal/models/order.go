@@ -8,7 +8,8 @@ import (
 type OrderStatus int
 
 const (
-	RegisteredOrder OrderStatus = iota
+	NewOrder OrderStatus = iota
+	RegisteredOrder
 	ProcessingOrder
 	InvalidOrder
 	ProcessedOrder
@@ -27,6 +28,7 @@ func (order Order) MarshalJSON() ([]byte, error) {
 	type OrderAlias Order
 
 	orderStatus2String := map[OrderStatus]string{
+		NewOrder:        "NEW",
 		RegisteredOrder: "REGISTERED",
 		ProcessingOrder: "PROCESSING",
 		ProcessedOrder:  "PROCESSED",
